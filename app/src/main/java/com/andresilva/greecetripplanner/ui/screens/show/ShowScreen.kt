@@ -1,5 +1,6 @@
 package com.andresilva.greecetripplanner.ui.screens.show
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,14 +37,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.andresilva.greecetripplanner.data.TripData
+import com.andresilva.greecetripplanner.data.model.DayNarrative
 import com.andresilva.greecetripplanner.data.model.TripDay
 import com.andresilva.greecetripplanner.ui.TripViewModel
 import com.andresilva.greecetripplanner.ui.components.DayTabs
 import com.andresilva.greecetripplanner.ui.components.LinkChip
 import com.andresilva.greecetripplanner.ui.components.TransitChip
+import com.andresilva.greecetripplanner.util.driveHours
+import com.andresilva.greecetripplanner.util.driveKm
 import com.andresilva.greecetripplanner.util.formatHours
 import com.andresilva.greecetripplanner.util.shareTrip
 
@@ -51,9 +57,27 @@ import com.andresilva.greecetripplanner.util.shareTrip
 fun ShowScreen(
     viewModel: TripViewModel,
     onSwitchToPlan: () -> Unit,
+    onSwitchToMap: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val activeTemplateKey by viewModel.activeTemplate.collectAsState()
+    val darkModeOverride by viewModel.darkModeOverride.collectAsState()
     val context = LocalContext.current
+
+    // Stats computation
+    val totalKm = uiState.days.zipWithNext().sumOf { (prev, cur) ->
+        val a = prev.region
+        val b = cur.region
+        if (a != null && b != null && a != b) TripData.driveKm(a, b) else 0
+    }
+    val totalPois = uiState.days.sumOf { it.poiIds.size }
+    val uniqueRegions = uiState.days.mapNotNull { it.region }.distinct().size
+    val activeDays = uiState.days.count { it.poiIds.isNotEmpty() }
+
+    // Lookup active template for narratives
+    val template = activeTemplateKey?.let { key ->
+        TripData.templates.find { it.key == key }
+    }
 
     Scaffold(
         topBar = {
@@ -64,6 +88,14 @@ fun ShowScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
                 actions = {
+                    IconButton(onClick = { viewModel.cycleDarkMode() }) {
+                        val icon = when (darkModeOverride) {
+                            null -> "🌗"
+                            true -> "🌙"
+                            false -> "☀️"
+                        }
+                        Text(icon, color = MaterialTheme.colorScheme.onPrimary)
+                    }
                     IconButton(onClick = { shareTrip(context, uiState.days) }) {
                         Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.onPrimary)
                     }
@@ -93,7 +125,23 @@ fun ShowScreen(
                 FilterChip(
                     selected = true,
                     onClick = {},
-                    label = { Text("🗺️ Show") },
+                    label = { Text("📋 Show") },
+                )
+                Spacer(Modifier.width(8.dp))
+                FilterChip(
+                    selected = false,
+                    onClick = onSwitchToMap,
+                    label = { Text("🗺️ Map") },
+                )
+            }
+
+            // Stats bar
+            if (totalPois > 0) {
+                StatsBar(
+                    totalKm = totalKm,
+                    totalDays = activeDays,
+                    regions = uniqueRegions,
+                    pois = totalPois,
                 )
             }
 
@@ -111,7 +159,13 @@ fun ShowScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(uiState.days, key = { it.dayIndex }) { day ->
-                    DayCard(day = day, dayIndex = day.dayIndex)
+                    val narrative = template?.dayNarratives?.get(day.dayIndex)
+                    DayCard(
+                        day = day,
+                        dayIndex = day.dayIndex,
+                        narrative = narrative,
+                        prevRegion = uiState.days.getOrNull(day.dayIndex - 1)?.region,
+                    )
                 }
             }
         }
@@ -119,7 +173,49 @@ fun ShowScreen(
 }
 
 @Composable
-private fun DayCard(day: TripDay, dayIndex: Int) {
+private fun StatsBar(
+    totalKm: Int,
+    totalDays: Int,
+    regions: Int,
+    pois: Int,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(vertical = 10.dp, horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        StatItem(value = "%,d".format(totalKm), label = "KM")
+        StatItem(value = "$totalDays", label = "DAYS")
+        StatItem(value = "$regions", label = "REGIONS")
+        StatItem(value = "$pois", label = "POIs")
+    }
+}
+
+@Composable
+private fun StatItem(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun DayCard(
+    day: TripDay,
+    dayIndex: Int,
+    narrative: DayNarrative?,
+    prevRegion: String?,
+) {
     val uriHandler = LocalUriHandler.current
     val dayColor = TripData.dayColors.getOrNull(dayIndex)?.let {
         Color(it)
@@ -137,6 +233,32 @@ private fun DayCard(day: TripDay, dayIndex: Int) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Drive banner (between days)
+            if (prevRegion != null && day.region != null && prevRegion != day.region) {
+                val driveH = driveHours(prevRegion, day.region)
+                val km = driveKm(prevRegion, day.region)
+                if (driveH > 0) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text("🚗", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = "$km km · ~${formatHours(driveH)}",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -156,6 +278,35 @@ private fun DayCard(day: TripDay, dayIndex: Int) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
                 )
+            }
+
+            // Narrative tagline
+            narrative?.let { n ->
+                Text(
+                    text = n.tagline,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = n.description,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                n.tip?.let { tip ->
+                    Text(
+                        text = tip,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontStyle = FontStyle.Italic,
+                        ),
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
             }
 
             day.note?.let {
@@ -209,6 +360,16 @@ private fun DayCard(day: TripDay, dayIndex: Int) {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                             )
+                            poi.tip?.let { tip ->
+                                Text(
+                                    text = tip,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        fontStyle = FontStyle.Italic,
+                                    ),
+                                    modifier = Modifier.padding(top = 1.dp),
+                                )
+                            }
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.padding(top = 2.dp),

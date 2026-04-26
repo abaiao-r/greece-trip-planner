@@ -16,6 +16,12 @@ fun driveHours(from: String?, to: String?): Double {
     return TripData.driveHours(from, to)
 }
 
+/** Get drive km between two regions. */
+fun driveKm(from: String?, to: String?): Int {
+    if (from == null || to == null || from == to) return 0
+    return TripData.driveKm(from, to)
+}
+
 /** Calculate total activity hours for a day's selected POIs. */
 fun activityHours(poiIds: List<String>): Double =
     poiIds.sumOf { TripData.poiMap[it]?.hours ?: 0.0 }

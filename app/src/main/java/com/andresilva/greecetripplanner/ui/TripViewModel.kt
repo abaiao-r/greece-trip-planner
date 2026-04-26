@@ -50,6 +50,12 @@ class TripViewModel @Inject constructor(
     private val _activeFilter = MutableStateFlow("all")
     val activeFilter: StateFlow<String> = _activeFilter.asStateFlow()
 
+    private val _activeTemplate = MutableStateFlow<String?>(null)
+    val activeTemplate: StateFlow<String?> = _activeTemplate.asStateFlow()
+
+    private val _darkModeOverride = MutableStateFlow<Boolean?>(null)
+    val darkModeOverride: StateFlow<Boolean?> = _darkModeOverride.asStateFlow()
+
     val uiState: StateFlow<TripUiState> = combine(
         repository.observeDays(),
         _activeDay,
@@ -62,6 +68,14 @@ class TripViewModel @Inject constructor(
     fun setActiveDay(day: Int) { _activeDay.value = day }
     fun setMode(mode: AppMode) { _mode.value = mode }
     fun setFilter(cat: String) { _activeFilter.value = cat }
+
+    fun cycleDarkMode() {
+        _darkModeOverride.value = when (_darkModeOverride.value) {
+            null -> true
+            true -> false
+            false -> null
+        }
+    }
 
     // ── Region management ──
 
@@ -127,6 +141,7 @@ class TripViewModel @Inject constructor(
             repository.applyTemplate(key)
             _activeDay.value = 0
             _activeFilter.value = "all"
+            _activeTemplate.value = key
         }
     }
 
@@ -134,6 +149,7 @@ class TripViewModel @Inject constructor(
         viewModelScope.launch {
             repository.clearAll()
             _activeDay.value = 0
+            _activeTemplate.value = null
         }
     }
 

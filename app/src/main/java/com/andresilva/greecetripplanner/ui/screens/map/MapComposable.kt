@@ -1,6 +1,6 @@
 package com.andresilva.greecetripplanner.ui.screens.map
 
-import android.graphics.drawable.Drawable
+import android.graphics.DashPathEffect
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,6 +28,8 @@ private val CARTO_VOYAGER = XYTileSource(
     ),
 )
 
+private val AIRPORT_POINT = GeoPoint(37.9364, 23.9445)
+
 @Composable
 fun MapComposable(
     days: List<TripDay>,
@@ -41,14 +43,13 @@ fun MapComposable(
         mapView.setTileSource(CARTO_VOYAGER)
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(7.0)
-        mapView.controller.setCenter(GeoPoint(38.5, 23.8)) // Center of Greece
+        mapView.controller.setCenter(GeoPoint(38.5, 23.8))
 
         onDispose {
             mapView.onDetach()
         }
     }
 
-    // Update markers when days or activeDay change
     DisposableEffect(days, activeDayIndex) {
         updateMapOverlays(mapView, days, activeDayIndex)
         onDispose { }
@@ -87,13 +88,51 @@ private fun updateMapOverlays(
             mapView.overlays.add(line)
         }
     } else {
-        // Show all days
+        // Show all days — draw full route through region centers
+        val routePoints = mutableListOf<GeoPoint>()
+        routePoints.add(AIRPORT_POINT)
+
+        days.forEach { day ->
+            val region = day.region?.let { TripData.regionMap[it] }
+            if (region != null) {
+                val regionCenter = GeoPoint(region.centerLat, region.centerLng)
+                // Avoid duplicate consecutive points (same region across days)
+                if (routePoints.isEmpty() || routePoints.last() != regionCenter) {
+                    routePoints.add(regionCenter)
+                }
+            }
+        }
+
+        // Close loop back to airport
+        routePoints.add(AIRPORT_POINT)
+
+        if (routePoints.size >= 2) {
+            val routeLine = Polyline().apply {
+                setPoints(routePoints)
+                outlinePaint.color = 0xFF1C69D4.toInt()
+                outlinePaint.strokeWidth = 3f
+                outlinePaint.pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f)
+            }
+            mapView.overlays.add(routeLine)
+        }
+
+        allPoints.addAll(routePoints)
+
+        // Airport marker
+        val airportMarker = Marker(mapView).apply {
+            position = AIRPORT_POINT
+            title = "Athens Airport (ATH)"
+            snippet = "✈️ Start & End"
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        }
+        mapView.overlays.add(airportMarker)
+
+        // Per-day POI markers and polylines
         days.forEach { day ->
             val pois = day.poiIds.mapNotNull { TripData.poiMap[it] }
             addPoiMarkers(mapView, pois, day.dayIndex)
 
             val geoPoints = pois.map { GeoPoint(it.lat, it.lng) }
-            allPoints.addAll(geoPoints)
 
             if (geoPoints.size >= 2) {
                 val line = Polyline().apply {

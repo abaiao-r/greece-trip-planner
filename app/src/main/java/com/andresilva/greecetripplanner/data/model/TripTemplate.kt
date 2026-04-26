@@ -9,5 +9,6 @@ data class TripTemplate(
     val icon: String,
     val description: String,
     val regions: List<String>,
-    val dayPois: Map<Int, List<String>>
+    val dayPois: Map<Int, List<String>>,
+    val dayNarratives: Map<Int, DayNarrative> = emptyMap()
 )

@@ -48,14 +48,17 @@ import com.andresilva.greecetripplanner.ui.components.TemplateBar
 import com.andresilva.greecetripplanner.ui.components.TransitChip
 import com.andresilva.greecetripplanner.util.shareTrip
 import com.andresilva.greecetripplanner.util.driveHours
+import com.andresilva.greecetripplanner.util.driveKm
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PlanScreen(
     viewModel: TripViewModel,
     onSwitchToShow: () -> Unit,
+    onSwitchToMap: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val darkModeOverride by viewModel.darkModeOverride.collectAsState()
     val context = LocalContext.current
 
     Scaffold(
@@ -67,6 +70,14 @@ fun PlanScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
                 actions = {
+                    IconButton(onClick = { viewModel.cycleDarkMode() }) {
+                        val icon = when (darkModeOverride) {
+                            null -> "\uD83C\uDF17"
+                            true -> "\uD83C\uDF19"
+                            false -> "\u2600\uFE0F"
+                        }
+                        Text(icon, color = MaterialTheme.colorScheme.onPrimary)
+                    }
                     IconButton(onClick = { shareTrip(context, uiState.days) }) {
                         Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.onPrimary)
                     }
@@ -110,7 +121,13 @@ fun PlanScreen(
                 FilterChip(
                     selected = false,
                     onClick = onSwitchToShow,
-                    label = { Text("🗺️ Show") },
+                    label = { Text("\uD83D\uDCCB Show") },
+                )
+                Spacer(Modifier.width(8.dp))
+                FilterChip(
+                    selected = false,
+                    onClick = onSwitchToMap,
+                    label = { Text("\uD83D\uDDFA\uFE0F Map") },
                 )
             }
 
@@ -161,13 +178,27 @@ fun PlanScreen(
                 val curRegion = day.region
                 if (prevRegion != null && curRegion != null && prevRegion != curRegion) {
                     val drive = driveHours(prevRegion, curRegion)
+                    val km = driveKm(prevRegion, curRegion)
                     if (drive > 0) {
                         val driveMin = (drive * 60).toInt()
-                        TransitChip(
-                            minutes = driveMin,
-                            isSameRegion = false,
+                        Row(
                             modifier = Modifier.padding(horizontal = 12.dp),
-                        )
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            TransitChip(
+                                minutes = driveMin,
+                                isSameRegion = false,
+                            )
+                            if (km > 0) {
+                                Text(
+                                    text = "$km km",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = MaterialTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
+                        }
                         Spacer(Modifier.height(4.dp))
                     }
                 }

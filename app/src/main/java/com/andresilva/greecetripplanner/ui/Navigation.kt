@@ -1,22 +1,21 @@
 package com.andresilva.greecetripplanner.ui
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.andresilva.greecetripplanner.ui.screens.map.MapScreen
 import com.andresilva.greecetripplanner.ui.screens.plan.PlanScreen
 import com.andresilva.greecetripplanner.ui.screens.show.ShowScreen
 
 object Routes {
     const val PLAN = "plan"
     const val SHOW = "show"
+    const val MAP = "map"
 }
 
 @Composable
-fun TripNavHost(navController: NavHostController) {
-    val viewModel: TripViewModel = hiltViewModel()
-
+fun TripNavHost(navController: NavHostController, viewModel: TripViewModel) {
     NavHost(navController = navController, startDestination = Routes.PLAN) {
         composable(Routes.PLAN) {
             PlanScreen(
@@ -24,6 +23,11 @@ fun TripNavHost(navController: NavHostController) {
                 onSwitchToShow = {
                     viewModel.setMode(AppMode.SHOW)
                     navController.navigate(Routes.SHOW) {
+                        launchSingleTop = true
+                    }
+                },
+                onSwitchToMap = {
+                    navController.navigate(Routes.MAP) {
                         launchSingleTop = true
                     }
                 },
@@ -37,6 +41,29 @@ fun TripNavHost(navController: NavHostController) {
                     navController.navigate(Routes.PLAN) {
                         launchSingleTop = true
                         popUpTo(Routes.PLAN) { inclusive = true }
+                    }
+                },
+                onSwitchToMap = {
+                    navController.navigate(Routes.MAP) {
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable(Routes.MAP) {
+            MapScreen(
+                viewModel = viewModel,
+                onSwitchToPlan = {
+                    viewModel.setMode(AppMode.PLAN)
+                    navController.navigate(Routes.PLAN) {
+                        launchSingleTop = true
+                        popUpTo(Routes.PLAN) { inclusive = true }
+                    }
+                },
+                onSwitchToShow = {
+                    viewModel.setMode(AppMode.SHOW)
+                    navController.navigate(Routes.SHOW) {
+                        launchSingleTop = true
                     }
                 },
             )

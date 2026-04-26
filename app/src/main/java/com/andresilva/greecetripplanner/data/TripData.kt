@@ -1,13 +1,14 @@
 package com.andresilva.greecetripplanner.data
 
 import com.andresilva.greecetripplanner.data.model.Category
+import com.andresilva.greecetripplanner.data.model.DayNarrative
 import com.andresilva.greecetripplanner.data.model.Poi
 import com.andresilva.greecetripplanner.data.model.Region
 import com.andresilva.greecetripplanner.data.model.TripTemplate
 
 /**
  * All static trip data extracted from the web planner.
- * 103 POIs, 13 regions, 13 categories, 78 drive-time pairs, 8 templates.
+ * 124 POIs, 18 regions, 13 categories, 8+ templates.
  */
 object TripData {
 
@@ -45,6 +46,12 @@ object TripData {
         Region("pelion", "Pelion", 20, 39.385, 23.050, "Lush green peninsula. Stone villages, ancient forest paths, and hidden beaches from Mamma Mia.", 8),
         Region("volos", "Volos", 10, 39.362, 22.943, "Port city famous for tsipouro tavernas (free meze!) and waterfront promenades facing Pelion.", 3),
         Region("thermopylae", "Thermopylae", 5, 38.796, 22.535, "Pass of the 300 Spartans. Leonidas monument and natural hot springs. Quick highway stop.", 2),
+        // Peloponnese
+        Region("nafplio", "Nafplio & Argolid", 15, 37.567, 22.803, "First capital of modern Greece. Venetian fortress, ancient Mycenae, Epidaurus theater, and Corinth Canal.", 6),
+        Region("monemvasia", "Monemvasia", 10, 36.688, 23.056, "Gibraltar of Greece. Medieval rock fortress rising from the sea, hidden town behind the walls.", 3),
+        Region("mystras", "Mystras & Sparta", 10, 37.075, 22.366, "UNESCO Byzantine ghost city on a hillside above Sparta. Last capital of the Byzantine Empire.", 3),
+        Region("mani", "Mani Peninsula", 15, 36.650, 22.390, "Tower villages, sea caves, and the mythological entrance to Hades at Cape Tainaron.", 5),
+        Region("olympia", "Ancient Olympia", 10, 37.639, 21.630, "Birthplace of the Olympic Games. Temple ruins, stadium, and world-class museum.", 4),
     )
 
     val regionMap = regions.associateBy { it.key }
@@ -102,6 +109,17 @@ object TripData {
         // Vergina / Pella
         "vergina|pella" to 0.75, "vergina|halkidiki" to 2.0,
         "pella|halkidiki" to 2.0,
+        // Peloponnese network
+        "athens|nafplio" to 2.0, "athens|monemvasia" to 4.0,
+        "athens|mystras" to 2.5, "athens|mani" to 4.0,
+        "athens|olympia" to 3.5,
+        "nafplio|monemvasia" to 2.5, "nafplio|mystras" to 1.75,
+        "nafplio|mani" to 3.0, "nafplio|olympia" to 2.5,
+        "monemvasia|mystras" to 1.5, "monemvasia|mani" to 1.5,
+        "monemvasia|olympia" to 4.0,
+        "mystras|mani" to 1.5, "mystras|olympia" to 3.0,
+        "mani|olympia" to 3.5,
+        "olympia|delphi" to 2.5, "nafplio|delphi" to 3.0,
     )
 
     fun driveHours(a: String, b: String): Double {
@@ -109,6 +127,30 @@ object TripData {
         return driveTimePairs["$a|$b"]
             ?: driveTimePairs["$b|$a"]
             ?: 3.0 // fallback
+    }
+
+    // ── Drive distance (km) between regions ──
+    private val driveKmPairs = mapOf(
+        // Known from HTML itinerary
+        "athens|delphi" to 180, "delphi|ioannina" to 280,
+        "ioannina|zagori" to 45, "zagori|meteora" to 165,
+        "meteora|olympus" to 155, "olympus|athens" to 410,
+        "olympus|thessaloniki" to 90, "thessaloniki|pelion" to 220,
+        "athens|thermopylae" to 200, "thermopylae|volos" to 120,
+        // Peloponnese
+        "athens|nafplio" to 150, "nafplio|monemvasia" to 200,
+        "monemvasia|mystras" to 100, "mystras|mani" to 80,
+        "mani|olympia" to 250, "olympia|athens" to 310,
+        "nafplio|mystras" to 130, "athens|monemvasia" to 350,
+        "athens|mystras" to 220, "athens|mani" to 300,
+        "athens|olympia" to 310, "nafplio|olympia" to 200,
+    )
+
+    fun driveKm(a: String, b: String): Int {
+        if (a == b) return 0
+        return driveKmPairs["$a|$b"]
+            ?: driveKmPairs["$b|$a"]
+            ?: (driveHours(a, b) * 80).toInt()
     }
 
     // ── POIs — all 103 ──
@@ -243,6 +285,37 @@ object TripData {
         // THERMOPYLAE (2)
         Poi("thr-01", "Leonidas monument & battlefield", "thermopylae", 0.5, listOf("history"), 38.7964, 22.5353, "Memorial to the 300 Spartans. Information panels. Right off the highway. Quick stop."),
         Poi("thr-02", "Thermopylae hot springs", "thermopylae", 0.5, listOf("nature"), 38.7930, 22.5400, "Free natural sulfur hot springs at the base of the cliffs. Bring a towel."),
+
+        // NAFPLIO & ARGOLID (6)
+        Poi("naf-01", "Corinth Canal viewpoint", "nafplio", 0.5, listOf("view"), 37.9364, 23.0058, "6 km cut through solid rock, 80 m deep. Dramatic engineering. Quick photo stop on the highway."),
+        Poi("naf-02", "Ancient Mycenae", "nafplio", 1.5, listOf("history"), 37.7309, 22.7571, "Lion Gate, Treasury of Atreus (Agamemnon's Tomb). Bronze Age citadel. UNESCO.", "⚠ No shade. Go early or bring a hat."),
+        Poi("naf-03", "Ancient Epidaurus theater", "nafplio", 1.5, listOf("history"), 37.5960, 23.0790, "Most acoustically perfect theater in the ancient world. Drop a coin on stage, hear it from 60 m. UNESCO."),
+        Poi("naf-04", "Palamidi Fortress", "nafplio", 1.5, listOf("hike", "view"), 37.5612, 22.8030, "999 steps to the top, 216 m above sea. 360° views of the Argolid. Or drive up."),
+        Poi("naf-05", "Nafplio old town & waterfront", "nafplio", 1.5, listOf("food", "view"), 37.5675, 22.8028, "Venetian old town. Narrow lanes, Syntagma Square cafes, Bourtzi island view, fresh seafood."),
+        Poi("naf-06", "Bourtzi Castle view", "nafplio", 0.5, listOf("view"), 37.5700, 22.8000, "Small island fortress in the harbor. Best viewed from the waterfront promenade at sunset."),
+
+        // MONEMVASIA (3)
+        Poi("mon-01", "Lower Town medieval walk", "monemvasia", 1.5, listOf("history"), 36.6865, 23.0565, "Walk through the single gate into a hidden medieval town. Cobblestone lanes, Byzantine churches, no cars."),
+        Poi("mon-02", "Upper Citadel hike", "monemvasia", 1.5, listOf("hike", "view"), 36.6890, 23.0540, "30 min climb to ruined fortress. Agia Sofia church. Sea panorama stretching to Crete on clear days."),
+        Poi("mon-03", "Sunset from fortress walls", "monemvasia", 0.5, listOf("view"), 36.6880, 23.0550, "Aegean stretching to the horizon. Candlelit dinner inside the walls afterwards."),
+
+        // MYSTRAS & SPARTA (3)
+        Poi("mys-01", "Mystras Byzantine ghost city", "mystras", 3.0, listOf("history"), 37.0750, 22.3660, "UNESCO. Palace of the Despots, Pantanassa monastery. Last Byzantine capital. Enter from upper gate, walk downhill."),
+        Poi("mys-02", "Peribleptos Monastery frescoes", "mystras", 0.5, listOf("church"), 37.0730, 22.3670, "Finest 14th-c. frescoes in Greece. Hidden in the rock face. Dark, intimate, extraordinary."),
+        Poi("mys-03", "Sparta Leonidas statue", "mystras", 0.5, listOf("history"), 37.0813, 22.4294, "Photo with the famous statue. Small Archaeological Museum next door. Quick stop."),
+
+        // MANI PENINSULA (5)
+        Poi("man-01", "Diros Caves boat tour", "mani", 1.0, listOf("nature"), 36.6390, 22.3850, "Underground sea caves by boat. Stalactites reflecting in still water. Go early to beat queues."),
+        Poi("man-02", "Vathia tower village", "mani", 0.5, listOf("village", "view"), 36.5300, 22.3800, "Abandoned stone tower village on a dramatic clifftop. Iconic Mani photos. Eerie and beautiful."),
+        Poi("man-03", "Cape Tainaron", "mani", 1.5, listOf("hike", "history"), 36.3890, 22.4840, "Southernmost point of mainland Europe. Ruins of Temple of Poseidon. Ancient entrance to the Underworld."),
+        Poi("man-04", "Areopoli old town", "mani", 0.5, listOf("village"), 36.6700, 22.3700, "Main Mani town. Stone architecture, Church of Taxiarches (17th c.). Good base."),
+        Poi("man-05", "Gytheio waterfront dinner", "mani", 1.5, listOf("food"), 36.7580, 22.5700, "Fresh fish, octopus drying in the sun. Cranae island view. Best seafood in the Peloponnese."),
+
+        // ANCIENT OLYMPIA (4)
+        Poi("olm-01", "Ancient Olympia site", "olympia", 2.0, listOf("history"), 37.6385, 21.6297, "Temple of Zeus, Temple of Hera, gymnasium. Run on the original stadium starting blocks. UNESCO."),
+        Poi("olm-02", "Olympia Archaeological Museum", "olympia", 1.5, listOf("museum"), 37.6380, 21.6290, "Hermes of Praxiteles, Temple of Zeus pediments. One of Greece's finest museums."),
+        Poi("olm-03", "Methoni Castle", "olympia", 1.0, listOf("history", "view"), 36.8160, 21.7050, "Massive Venetian sea fortress. Walk to the Bourtzi tower standing in the water. Dramatic."),
+        Poi("olm-04", "Voidokilia Beach", "olympia", 1.5, listOf("beach"), 36.9400, 21.6580, "Perfect omega-shaped beach. Golden sand, shallow turquoise water. One of Europe's most beautiful."),
     )
 
     val poiMap: Map<String, Poi> = pois.associateBy { it.id }
@@ -352,6 +425,71 @@ object TripData {
                 5 to listOf("oly-01", "oly-05", "oly-06"),
                 6 to listOf("pln-03", "pln-02", "pln-04"),
                 7 to listOf("ath-14")
+            )
+        ),
+        TripTemplate(
+            key = "peloponnese", name = "Peloponnese", icon = "🏺",
+            description = "Athens → Nafplio → Monemvasia → Mystras → Mani → Olympia → Athens",
+            regions = listOf("athens", "nafplio", "monemvasia", "mystras", "mani", "olympia", "athens", "athens"),
+            dayPois = mapOf(
+                0 to listOf("ath-11", "ath-09"),
+                1 to listOf("naf-01", "naf-02", "naf-03", "naf-04", "naf-05"),
+                2 to listOf("mon-01", "mon-02", "mon-03"),
+                3 to listOf("mys-01", "mys-02", "mys-03"),
+                4 to listOf("man-01", "man-02", "man-03", "man-04", "man-05"),
+                5 to listOf("olm-03", "olm-04", "olm-01", "olm-02"),
+                6 to listOf("ath-01", "ath-02", "ath-08"),
+                7 to listOf("ath-03")
+            ),
+            dayNarratives = mapOf(
+                0 to DayNarrative(
+                    tagline = "Evening arrival · First Greek dinner in Plaka",
+                    description = "Land in Athens evening. Grab souvlaki in Plaka and catch the lit Acropolis from Areopagus Rock.",
+                    tip = "💡 Hotel near Monastiraki. Souvlaki at Thanasis. Areopagus for lit Acropolis view.",
+                    tags = listOf("food", "view")
+                ),
+                1 to DayNarrative(
+                    tagline = "Corinth Canal · Ancient Mycenae · Epidaurus theater · Palamidi sunset",
+                    description = "Full day in the Argolid. Drive south, stop at the Corinth Canal, explore Mycenae's Bronze Age citadel, hear a pin drop at Epidaurus theater, climb Palamidi for sunset views. Sleep in Nafplio old town.",
+                    tip = "💡 7 AM depart → 8:30 Corinth Canal → 9:30 Mycenae → 12 PM Epidaurus → 2 PM Nafplio lunch → 5 PM Palamidi sunset.",
+                    tags = listOf("monument", "hike", "view", "food")
+                ),
+                2 to DayNarrative(
+                    tagline = "Gibraltar of Greece · Medieval rock fortress floating in the Aegean",
+                    description = "Drive to Monemvasia, a massive rock jutting from the sea. Walk through the single gate into a hidden medieval town. Climb to the upper citadel for views stretching to Crete. Sunset dinner inside the walls.",
+                    tip = "💡 Arrive ~1 PM → lunch inside walls → 3 PM lower town → 5 PM upper citadel → 8:30 PM sunset dinner.",
+                    tags = listOf("monument", "hike", "view", "food")
+                ),
+                3 to DayNarrative(
+                    tagline = "Byzantine ghost city · Frescoed churches & palace ruins",
+                    description = "Mystras, a UNESCO ghost city clinging to a hillside above Sparta. Last capital of the Byzantine Empire. Ruined palaces, intact frescoed churches. Quick stop at Sparta's Leonidas statue.",
+                    tip = "💡 10 AM Mystras (enter from upper gate, walk downhill) → 1 PM lunch → 3 PM Sparta.",
+                    tags = listOf("monument", "view")
+                ),
+                4 to DayNarrative(
+                    tagline = "Tower villages · Sea caves · Europe's wild south · Gateway to Hades",
+                    description = "The Mani: Greece's wildest peninsula. Stone tower villages, Diros sea caves by boat, abandoned Vathia on a clifftop, and Cape Tainaron — the ancient entrance to the Underworld.",
+                    tip = "💡 9 AM Diros Caves (go early) → 11 AM drive south → 12 PM Vathia → 2 PM Cape Tainaron → 5 PM Gytheio dinner.",
+                    tags = listOf("monument", "view", "food")
+                ),
+                5 to DayNarrative(
+                    tagline = "Venetian fortress · Omega beach · Birthplace of the Olympic Games",
+                    description = "Long drive west with spectacular stops. Methoni Castle (Venetian sea fortress), Voidokilia (perfect omega beach), then Ancient Olympia where athletes competed for 1,000 years. Run in the original stadium.",
+                    tip = "💡 8 AM depart → 10:30 Methoni → 11:30 Voidokilia swim → 2 PM Olympia site → 4 PM museum.",
+                    tags = listOf("monument", "beach", "view")
+                ),
+                6 to DayNarrative(
+                    tagline = "Highway east · Acropolis, museum & Philopappos sunset",
+                    description = "Drive the Patras-Corinth-Athens highway. Arrive ~1 PM. Afternoon: Acropolis + Parthenon, Acropolis Museum. Finish at Philopappos Hill for sunset with the Acropolis glowing.",
+                    tip = "💡 9 AM depart → 1 PM Athens → 2 PM Acropolis → 4:30 Museum → 8 PM Philopappos sunset.",
+                    tags = listOf("monument", "view")
+                ),
+                7 to DayNarrative(
+                    tagline = "Morning free · Afternoon flight",
+                    description = "Morning: Ancient Agora & Temple of Hephaestus, or a slow breakfast in Plaka. Drop car at airport for afternoon flight.",
+                    tip = "💡 Leave for airport by ~noon. Drive from center ~45 min.",
+                    tags = listOf("monument", "food")
+                )
             )
         ),
     )
