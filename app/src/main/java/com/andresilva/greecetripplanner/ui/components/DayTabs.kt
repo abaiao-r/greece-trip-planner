@@ -30,8 +30,7 @@ fun DayTabs(
     ) {
         days.forEachIndexed { index, day ->
             val dayColor = TripData.dayColors.getOrNull(index)?.let {
-                try { Color(android.graphics.Color.parseColor(it)) }
-                catch (_: Exception) { MaterialTheme.colorScheme.primary }
+                Color(it)
             } ?: MaterialTheme.colorScheme.primary
 
             Tab(

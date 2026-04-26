@@ -81,9 +81,7 @@ private fun updateMapOverlays(
         if (geoPoints.size >= 2) {
             val line = Polyline().apply {
                 setPoints(geoPoints)
-                outlinePaint.color = android.graphics.Color.parseColor(
-                    TripData.dayColors.getOrElse(activeDayIndex) { "#1C69D4" }
-                )
+                outlinePaint.color = TripData.dayColors.getOrElse(activeDayIndex) { 0xFF1C69D4 }.toInt()
                 outlinePaint.strokeWidth = 4f
             }
             mapView.overlays.add(line)
@@ -100,9 +98,7 @@ private fun updateMapOverlays(
             if (geoPoints.size >= 2) {
                 val line = Polyline().apply {
                     setPoints(geoPoints)
-                    outlinePaint.color = android.graphics.Color.parseColor(
-                        TripData.dayColors.getOrElse(day.dayIndex) { "#1C69D4" }
-                    )
+                    outlinePaint.color = TripData.dayColors.getOrElse(day.dayIndex) { 0xFF1C69D4 }.toInt()
                     outlinePaint.strokeWidth = 3f
                 }
                 mapView.overlays.add(line)

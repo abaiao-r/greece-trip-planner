@@ -122,8 +122,7 @@ fun ShowScreen(
 private fun DayCard(day: TripDay, dayIndex: Int) {
     val uriHandler = LocalUriHandler.current
     val dayColor = TripData.dayColors.getOrNull(dayIndex)?.let {
-        try { Color(android.graphics.Color.parseColor(it)) }
-        catch (_: Exception) { MaterialTheme.colorScheme.primary }
+        Color(it)
     } ?: MaterialTheme.colorScheme.primary
 
     val regionName = day.region?.let { rk ->
