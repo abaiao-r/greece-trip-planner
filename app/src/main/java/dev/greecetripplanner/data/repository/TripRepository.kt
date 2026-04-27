@@ -71,7 +71,7 @@ class TripRepository @Inject constructor(
     fun observeCustomTemplates(): Flow<List<TripTemplate>> =
         customDao.observeAll().map { entities -> entities.map { it.toDomain() } }
 
-    suspend fun getCustomTemplate(key: String): TripTemplate? =
+    private suspend fun getCustomTemplate(key: String): TripTemplate? =
         customDao.getAll().find { it.key == key }?.toDomain()
 
     suspend fun saveCustomTemplate(template: TripTemplate) {
@@ -80,27 +80,6 @@ class TripRepository @Inject constructor(
 
     suspend fun deleteCustomTemplate(key: String) {
         customDao.delete(key)
-    }
-
-    /** Save the current trip state as a custom template. */
-    suspend fun saveCurrentAsTemplate(name: String, icon: String): TripTemplate {
-        val days = getDays()
-        val regions = days.map { it.region ?: "" }
-        val dayPois = days.associate { it.dayIndex to it.poiIds }
-        val description = regions.filter { it.isNotEmpty() }
-            .distinct()
-            .joinToString(" → ") { TripData.regionMap[it]?.name ?: it }
-        val key = "custom-${System.currentTimeMillis()}"
-        val template = TripTemplate(
-            key = key,
-            name = name,
-            icon = icon,
-            description = description,
-            regions = regions,
-            dayPois = dayPois,
-        )
-        saveCustomTemplate(template)
-        return template
     }
 
     // ── Mapping ──
@@ -116,14 +95,16 @@ class TripRepository @Inject constructor(
             date = TripDay.DATES[index],
             region = region,
             poiIds = ids,
-            note = TripDay.DAY_NOTES[index]
+            note = TripDay.DAY_NOTES[index],
+            userNote = userNote,
         )
     }
 
     private fun TripDay.toEntity() = TripDayEntity(
         dayIndex = dayIndex,
         region = region,
-        poiIdsJson = json.encodeToString(poiIds)
+        poiIdsJson = json.encodeToString(poiIds),
+        userNote = userNote,
     )
 
     private fun defaultDay(index: Int) = TripDay(
@@ -139,8 +120,8 @@ class TripRepository @Inject constructor(
         name = name,
         icon = icon,
         description = description,
-        regions = json.decodeFromString(regionsJson),
-        dayPois = json.decodeFromString(dayPoisJson),
+        regions = try { json.decodeFromString(regionsJson) } catch (_: Exception) { emptyList() },
+        dayPois = try { json.decodeFromString(dayPoisJson) } catch (_: Exception) { emptyMap() },
     )
 
     private fun TripTemplate.toEntity() = CustomTemplateEntity(

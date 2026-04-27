@@ -14,3 +14,13 @@
 -keepclasseswithmembers class dev.greecetripplanner.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+# kotlinx.serialization
+-keepattributes InnerClasses
+-keep,includedescriptorclasses class dev.greecetripplanner.**$$serializer { *; }
+-keepclassmembers class dev.greecetripplanner.** {
+    *** Companion;
+}
+-keepclasseswithmembers class dev.greecetripplanner.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}

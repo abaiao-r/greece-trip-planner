@@ -62,17 +62,8 @@ fun ShowScreen(
     val uiState by viewModel.uiState.collectAsState()
     val activeTemplateKey by viewModel.activeTemplate.collectAsState()
     val darkModeOverride by viewModel.darkModeOverride.collectAsState()
+    val stats by viewModel.stats.collectAsState()
     val context = LocalContext.current
-
-    // Stats computation
-    val totalKm = uiState.days.zipWithNext().sumOf { (prev, cur) ->
-        val a = prev.region
-        val b = cur.region
-        if (a != null && b != null && a != b) TripData.driveKm(a, b) else 0
-    }
-    val totalPois = uiState.days.sumOf { it.poiIds.size }
-    val uniqueRegions = uiState.days.mapNotNull { it.region }.distinct().size
-    val activeDays = uiState.days.count { it.poiIds.isNotEmpty() }
 
     // Lookup active template for narratives
     val template = activeTemplateKey?.let { key ->
@@ -136,12 +127,13 @@ fun ShowScreen(
             }
 
             // Stats bar
-            if (totalPois > 0) {
+            if (stats.totalPois > 0) {
                 StatsBar(
-                    totalKm = totalKm,
-                    totalDays = activeDays,
-                    regions = uniqueRegions,
-                    pois = totalPois,
+                    totalKm = stats.totalKm,
+                    totalDays = stats.activeDays,
+                    regions = stats.uniqueRegions,
+                    pois = stats.totalPois,
+                    fuelCost = stats.fuelCostEur,
                 )
             }
 
@@ -178,6 +170,7 @@ private fun StatsBar(
     totalDays: Int,
     regions: Int,
     pois: Int,
+    fuelCost: Double,
 ) {
     Row(
         modifier = Modifier
@@ -190,6 +183,9 @@ private fun StatsBar(
         StatItem(value = "$totalDays", label = "DAYS")
         StatItem(value = "$regions", label = "REGIONS")
         StatItem(value = "$pois", label = "POIs")
+        if (fuelCost > 0) {
+            StatItem(value = "€${"%.0f".format(fuelCost)}", label = "FUEL")
+        }
     }
 }
 
@@ -319,6 +315,17 @@ private fun DayCard(
                 )
             }
 
+            day.userNote?.let {
+                Text(
+                    text = "📝 $it",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontStyle = FontStyle.Italic,
+                    ),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+
             Spacer(Modifier.height(8.dp))
 
             if (day.poiIds.isEmpty()) {
@@ -334,7 +341,8 @@ private fun DayCard(
                     val cat = TripData.categoryMap[poi.categories.firstOrNull() ?: ""]
 
                     if (idx > 0) {
-                        TransitChip(minutes = 15, isSameRegion = true)
+                        val transitMin = day.region?.let { TripData.regionMap[it]?.transitMinutes } ?: 15
+                        TransitChip(minutes = transitMin, isSameRegion = true)
                     }
 
                     Row(

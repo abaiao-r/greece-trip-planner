@@ -21,7 +21,6 @@ fun TripNavHost(navController: NavHostController, viewModel: TripViewModel) {
             PlanScreen(
                 viewModel = viewModel,
                 onSwitchToShow = {
-                    viewModel.setMode(AppMode.SHOW)
                     navController.navigate(Routes.SHOW) {
                         launchSingleTop = true
                     }
@@ -37,7 +36,6 @@ fun TripNavHost(navController: NavHostController, viewModel: TripViewModel) {
             ShowScreen(
                 viewModel = viewModel,
                 onSwitchToPlan = {
-                    viewModel.setMode(AppMode.PLAN)
                     navController.navigate(Routes.PLAN) {
                         launchSingleTop = true
                         popUpTo(Routes.PLAN) { inclusive = true }
@@ -54,14 +52,12 @@ fun TripNavHost(navController: NavHostController, viewModel: TripViewModel) {
             MapScreen(
                 viewModel = viewModel,
                 onSwitchToPlan = {
-                    viewModel.setMode(AppMode.PLAN)
                     navController.navigate(Routes.PLAN) {
                         launchSingleTop = true
                         popUpTo(Routes.PLAN) { inclusive = true }
                     }
                 },
                 onSwitchToShow = {
-                    viewModel.setMode(AppMode.SHOW)
                     navController.navigate(Routes.SHOW) {
                         launchSingleTop = true
                     }

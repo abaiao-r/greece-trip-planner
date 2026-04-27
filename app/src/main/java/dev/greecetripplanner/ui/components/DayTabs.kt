@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import dev.greecetripplanner.data.TripData
 import dev.greecetripplanner.data.model.TripDay
 
@@ -36,6 +38,9 @@ fun DayTabs(
             Tab(
                 selected = index == activeDay,
                 onClick = { onDaySelected(index) },
+                modifier = Modifier.semantics {
+                    contentDescription = "Day $index, ${TripDay.DATES[index]}"
+                },
                 text = {
                     Text(
                         text = "D${index}",
