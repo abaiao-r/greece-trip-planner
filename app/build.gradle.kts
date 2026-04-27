@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.andresilva.greecetripplanner"
+    namespace = "dev.greecetripplanner"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.andresilva.greecetripplanner"
+        applicationId = "dev.greecetripplanner"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
