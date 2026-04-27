@@ -81,6 +81,54 @@
         .route-card-name input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
         .route-card-desc { font-size: 12px; color: var(--text-sec); margin-top: 4px; margin-left: 24px; }
         .route-card-km { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; margin-left: 24px; }
+        .route-card.custom { border-style: dashed; }
+        .route-card-actions { display: flex; gap: 6px; margin-top: 6px; margin-left: 24px; }
+        .route-card-actions button { font-size: 11px; padding: 2px 8px; cursor: pointer; font-family: inherit; border: 1px solid var(--border); background: var(--card); color: var(--text-sec); }
+        .route-card-actions button:hover { border-color: var(--accent); color: var(--accent); }
+        .route-card-actions button.delete-route:hover { border-color: var(--error); color: var(--error); }
+        .create-route-btn {
+            flex: 1; min-width: 200px; padding: 14px 16px;
+            background: var(--card); border: 2px dashed var(--border);
+            cursor: pointer; transition: border-color 0.15s;
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; font-size: 14px; font-weight: 700; color: var(--text-sec); font-family: inherit;
+        }
+        .create-route-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── Route Editor Modal ── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-overlay[hidden] { display: none; }
+        .modal {
+            background: var(--bg); border: 1px solid var(--border); max-width: 640px; width: 95%;
+            max-height: 90vh; overflow-y: auto; padding: 24px;
+        }
+        .modal h2 { margin: 0 0 16px; font-size: 18px; }
+        .modal-field { margin-bottom: 12px; }
+        .modal-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-sec); margin-bottom: 4px; }
+        .modal-field input, .modal-field select { width: 100%; padding: 8px; font-size: 13px; font-family: inherit; border: 1px solid var(--border); background: var(--card); color: var(--text); box-sizing: border-box; }
+        .modal-field input:focus, .modal-field select:focus { outline: 2px solid var(--accent); }
+        .day-editor { border: 1px solid var(--border); padding: 12px; margin-bottom: 8px; background: var(--elevated); }
+        .day-editor-header { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+        .day-editor-row { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; align-items: end; }
+        .day-editor-row .modal-field { flex: 1; min-width: 120px; margin-bottom: 0; }
+        .region-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .region-tag {
+            padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+            border: 1px solid var(--border); background: var(--card); color: var(--text-sec);
+            font-family: inherit;
+        }
+        .region-tag.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+        .modal-actions button {
+            padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+            font-family: inherit; border: 1px solid var(--border);
+        }
+        .modal-actions .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .modal-actions .btn-primary:hover { opacity: 0.85; }
+        .modal-actions .btn-cancel { background: var(--card); color: var(--text); }
 
         /* ── Presets ── */
         .preset-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
@@ -291,6 +339,8 @@
         @media (max-width: 700px) {
             .poi-grid { grid-template-columns: 1fr; }
             .route-picker { flex-direction: column; }
+            .day-editor-row { flex-direction: column; }
+            .modal { padding: 16px; }
             .day-tabs { flex-wrap: nowrap; }
             .day-tab { min-width: 70px; padding: 8px 4px; }
             .day-tab .tab-label { display: none; }
@@ -374,6 +424,30 @@
 
         <div class="section-title">④ Your trip at a glance</div>
         <div class="trip-summary" id="tripSummary"></div>
+    </div>
+
+    <!-- Custom Route Editor Modal -->
+    <div class="modal-overlay" id="routeModal" hidden>
+        <div class="modal" role="dialog" aria-labelledby="routeModalTitle">
+            <h2 id="routeModalTitle">Create Custom Route</h2>
+            <div class="modal-field">
+                <label for="routeName">Route name</label>
+                <input id="routeName" type="text" placeholder="e.g. Southern Highlights" maxlength="40">
+            </div>
+            <div class="modal-field">
+                <label for="routeDesc">Description</label>
+                <input id="routeDesc" type="text" placeholder="e.g. Athens → Nafplio → Mystras → Athens" maxlength="80">
+            </div>
+            <div class="modal-field">
+                <label for="routeKm">Total km (estimate)</label>
+                <input id="routeKm" type="number" value="1000" min="0" max="5000">
+            </div>
+            <div id="dayEditors"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="routeModalCancel">Cancel</button>
+                <button class="btn-primary" id="routeModalSave">Save route</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -583,6 +657,29 @@
     let activePreset = null;
     let activeFilter = 'all';
 
+    /* ── Custom routes (localStorage) ── */
+    const CUSTOM_ROUTES_KEY = 'planner-custom-routes';
+    const tripDates = ['Sat, Jun 14','Sun, Jun 15','Mon, Jun 16','Tue, Jun 17','Wed, Jun 18','Thu, Jun 19','Fri, Jun 20','Sat, Jun 21'];
+    const allRegionKeys = Object.keys(regionNames);
+
+    function loadCustomRoutes() {
+        try {
+            const raw = localStorage.getItem(CUSTOM_ROUTES_KEY);
+            if (!raw) return {};
+            return JSON.parse(raw);
+        } catch { return {}; }
+    }
+    function saveCustomRoutes(routes) {
+        localStorage.setItem(CUSTOM_ROUTES_KEY, JSON.stringify(routes));
+    }
+    function mergeCustomRoutes() {
+        /* Remove old custom entries */
+        Object.keys(routeVariants).forEach(k => { if (routeVariants[k]._custom) delete routeVariants[k]; });
+        const custom = loadCustomRoutes();
+        Object.entries(custom).forEach(([key, rv]) => { rv._custom = true; routeVariants[key] = rv; });
+    }
+    mergeCustomRoutes();
+
     /* ═══════════════════════════════════════════
        HELPERS
        ═══════════════════════════════════════════ */
@@ -653,19 +750,35 @@
     function renderRoutePicker() {
         const el = document.getElementById('routePicker');
         el.innerHTML = Object.entries(routeVariants).map(([key, rv]) => `
-            <div class="route-card ${currentVariant === key ? 'active' : ''}" data-variant="${key}" role="radio" aria-checked="${currentVariant === key}" tabindex="0">
+            <div class="route-card ${currentVariant === key ? 'active' : ''} ${rv._custom ? 'custom' : ''}" data-variant="${key}" role="radio" aria-checked="${currentVariant === key}" tabindex="0">
                 <div class="route-card-name">
                     <input type="radio" name="route" value="${key}" ${currentVariant === key ? 'checked' : ''} tabindex="-1">
-                    ${rv.name}
+                    ${rv.name}${rv._custom ? ' <span style="font-size:10px;color:var(--text-sec)">(custom)</span>' : ''}
                 </div>
                 <div class="route-card-desc">${rv.desc}</div>
                 <div class="route-card-km">~${rv.totalKm.toLocaleString()} km total driving</div>
+                ${rv._custom ? `<div class="route-card-actions">
+                    <button class="edit-route" data-key="${key}" title="Edit route">✎ Edit</button>
+                    <button class="delete-route" data-key="${key}" title="Delete route">✕ Delete</button>
+                </div>` : ''}
             </div>
-        `).join('');
+        `).join('') + `
+            <button class="create-route-btn" id="createRouteBtn" title="Create a custom route">+ Create custom route</button>
+        `;
         el.querySelectorAll('.route-card').forEach(card => {
-            card.addEventListener('click', () => switchVariant(card.dataset.variant));
+            card.addEventListener('click', e => {
+                if (e.target.closest('.route-card-actions')) return;
+                switchVariant(card.dataset.variant);
+            });
             card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchVariant(card.dataset.variant); }});
         });
+        el.querySelectorAll('.edit-route').forEach(btn => {
+            btn.addEventListener('click', e => { e.stopPropagation(); openRouteEditor(btn.dataset.key); });
+        });
+        el.querySelectorAll('.delete-route').forEach(btn => {
+            btn.addEventListener('click', e => { e.stopPropagation(); deleteCustomRoute(btn.dataset.key); });
+        });
+        document.getElementById('createRouteBtn').addEventListener('click', () => openRouteEditor(null));
     }
 
     function renderPresetBar() {
@@ -986,6 +1099,149 @@
         renderSummary();
         renderPresetBar();
     }
+
+    /* ═══════════════════════════════════════════
+       CUSTOM ROUTE EDITOR
+       ═══════════════════════════════════════════ */
+    let editingRouteKey = null;
+
+    function openRouteEditor(key) {
+        editingRouteKey = key;
+        const modal = document.getElementById('routeModal');
+        const titleEl = document.getElementById('routeModalTitle');
+        titleEl.textContent = key ? 'Edit Custom Route' : 'Create Custom Route';
+
+        if (key && routeVariants[key]) {
+            const rv = routeVariants[key];
+            document.getElementById('routeName').value = rv.name;
+            document.getElementById('routeDesc').value = rv.desc;
+            document.getElementById('routeKm').value = rv.totalKm;
+            renderDayEditors(rv.days);
+        } else {
+            document.getElementById('routeName').value = '';
+            document.getElementById('routeDesc').value = '';
+            document.getElementById('routeKm').value = 1000;
+            /* Default: copy structure from current variant */
+            const template = routeVariants[currentVariant].days.map(d => ({
+                day: d.day, date: d.date, label: '', regions: [...d.regions],
+                driveHours: d.driveHours, totalHours: d.totalHours, drive: d.drive || '', note: d.note || ''
+            }));
+            renderDayEditors(template);
+        }
+        modal.hidden = false;
+        document.getElementById('routeName').focus();
+    }
+
+    function closeRouteEditor() {
+        document.getElementById('routeModal').hidden = true;
+        editingRouteKey = null;
+    }
+
+    function renderDayEditors(days) {
+        const container = document.getElementById('dayEditors');
+        container.innerHTML = days.map((d, i) => `
+            <div class="day-editor" data-day="${i}">
+                <div class="day-editor-header">Day ${i} · ${tripDates[i]}</div>
+                <div class="day-editor-row">
+                    <div class="modal-field">
+                        <label>Label</label>
+                        <input class="de-label" type="text" value="${d.label || ''}" placeholder="e.g. Athens → Delphi" maxlength="60">
+                    </div>
+                    <div class="modal-field" style="max-width:90px">
+                        <label>Drive h</label>
+                        <input class="de-drive" type="number" value="${d.driveHours}" min="0" max="12" step="0.25">
+                    </div>
+                    <div class="modal-field" style="max-width:90px">
+                        <label>Total h</label>
+                        <input class="de-total" type="number" value="${d.totalHours}" min="1" max="16" step="0.5">
+                    </div>
+                </div>
+                <div class="day-editor-row">
+                    <div class="modal-field" style="flex:2">
+                        <label>Drive info</label>
+                        <input class="de-driveinfo" type="text" value="${d.drive || ''}" placeholder="e.g. 180 km · ~2.5h">
+                    </div>
+                    <div class="modal-field" style="flex:2">
+                        <label>Note</label>
+                        <input class="de-note" type="text" value="${d.note || ''}" placeholder="Optional note">
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <label>Regions (click to toggle)</label>
+                    <div class="region-tags">
+                        ${allRegionKeys.map(r => `<button type="button" class="region-tag ${d.regions.includes(r) ? 'selected' : ''}" data-region="${r}">${regionNames[r]}</button>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        /* Wire up region toggle buttons */
+        container.querySelectorAll('.region-tag').forEach(btn => {
+            btn.addEventListener('click', () => btn.classList.toggle('selected'));
+        });
+    }
+
+    function collectRouteFromModal() {
+        const name = document.getElementById('routeName').value.trim();
+        const desc = document.getElementById('routeDesc').value.trim();
+        const totalKm = parseInt(document.getElementById('routeKm').value) || 0;
+        if (!name) { document.getElementById('routeName').focus(); return null; }
+
+        const days = [];
+        document.querySelectorAll('#dayEditors .day-editor').forEach((de, i) => {
+            const regions = [...de.querySelectorAll('.region-tag.selected')].map(b => b.dataset.region);
+            const label = de.querySelector('.de-label').value.trim() || tripDates[i];
+            const driveHours = parseFloat(de.querySelector('.de-drive').value) || 0;
+            const totalHours = parseFloat(de.querySelector('.de-total').value) || 12;
+            const drive = de.querySelector('.de-driveinfo').value.trim() || null;
+            const note = de.querySelector('.de-note').value.trim() || undefined;
+            days.push({ day: i, date: tripDates[i], label, regions, driveHours, totalHours, drive, note });
+        });
+
+        /* Build description from labels if empty */
+        const finalDesc = desc || days.filter(d => d.label).map(d => d.label.split('→').pop().trim()).filter((v,i,a) => a.indexOf(v) === i).join(' → ');
+
+        return { name, desc: finalDesc, totalKm, days, _custom: true };
+    }
+
+    function saveRouteFromModal() {
+        const route = collectRouteFromModal();
+        if (!route) return;
+
+        const key = editingRouteKey || 'custom-' + Date.now();
+        const custom = loadCustomRoutes();
+        custom[key] = route;
+        saveCustomRoutes(custom);
+        mergeCustomRoutes();
+
+        currentVariant = key;
+        /* Reset selections for the new/edited route */
+        for (let d = 0; d < 8; d++) selectedPois[d] = [];
+        activePreset = null;
+        closeRouteEditor();
+        renderAll();
+    }
+
+    function deleteCustomRoute(key) {
+        if (!confirm('Delete this custom route?')) return;
+        const custom = loadCustomRoutes();
+        delete custom[key];
+        saveCustomRoutes(custom);
+        if (currentVariant === key) currentVariant = 'northern';
+        mergeCustomRoutes();
+        for (let d = 0; d < 8; d++) selectedPois[d] = [];
+        activePreset = null;
+        renderAll();
+    }
+
+    /* Modal buttons */
+    document.getElementById('routeModalSave').addEventListener('click', saveRouteFromModal);
+    document.getElementById('routeModalCancel').addEventListener('click', closeRouteEditor);
+    document.getElementById('routeModal').addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeRouteEditor();
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !document.getElementById('routeModal').hidden) closeRouteEditor();
+    });
 
     /* ═══════════════════════════════════════════
        THEME
