@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greece Road Trip — Athens Loop · Jun 14–21</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg: #f2f2f2;
+            --card: #ffffff;
+            --elevated: #e6e6e6;
+            --border: #d6d6d6;
+            --text: #262626;
+            --text-sec: #666666;
+            --accent: #1c69d4;
+            --accent-hover: #155bb8;
+            --success: #00823b;
+            --warning: #e89b00;
+            --error: #c91432;
+            --near-black: #1a1a1a;
+        }
+        [data-theme="dark"] {
+            --bg: #111111;
+            --card: #1a1a1a;
+            --elevated: #2a2a2a;
+            --border: #4d4d4d;
+            --text: #ffffff;
+            --text-sec: #b2b2b2;
+            --accent: #1c69d4;
+            --accent-hover: #4a8de6;
+            --success: #2ebd6b;
+            --warning: #f0b840;
+            --error: #e84060;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: var(--bg); color: var(--text);
+            display: flex; height: 100vh; overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 440px; min-width: 440px; height: 100vh;
+            overflow-y: auto; background: var(--card);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header {
+            background: #000000; color: #ffffff;
+            padding: 20px 24px; position: sticky; top: 0; z-index: 10;
+        }
+        .sidebar-header h1 { font-size: 18px; font-weight: 300; text-transform: uppercase; letter-spacing: 0.05em; }
+        .sidebar-header .subtitle { font-size: 13px; color: #b2b2b2; margin-top: 4px; }
+        .sidebar-header .flight-info { font-size: 11px; color: #b2b2b2; margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+        .sidebar-header .flight-info span { display: flex; align-items: center; gap: 6px; }
+        .header-controls { display: flex; justify-content: space-between; align-items: flex-start; }
+        .theme-toggle {
+            background: none; border: 1px solid #666666; color: #ffffff;
+            width: 36px; height: 36px; cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; justify-content: center; border-radius: 0;
+            flex-shrink: 0; margin-top: 2px;
+        }
+        .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .stats-bar { display: flex; background: var(--elevated); border-bottom: 1px solid var(--border); }
+        .stat { flex: 1; padding: 12px 12px; text-align: center; border-right: 1px solid var(--border); }
+        .stat:last-child { border-right: none; }
+        .stat-value { font-size: 18px; font-weight: 700; color: var(--text); }
+        .stat-label { font-size: 10px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.04em; }
+
+        .day-card { padding: 18px 24px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+        .day-card:hover, .day-card.active { background: var(--elevated); }
+        .day-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .day-badge {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #ffffff; font-weight: 700; font-size: 14px; flex-shrink: 0;
+        }
+        .day-title { font-size: 15px; font-weight: 700; color: var(--text); }
+        .day-date { font-size: 11px; color: var(--accent); font-weight: 600; }
+        .day-meta { font-size: 12px; color: var(--text-sec); margin-top: 2px; }
+        .day-desc { font-size: 13px; color: var(--text-sec); line-height: 1.5; margin-bottom: 10px; }
+        .poi-list { list-style: none; padding: 0; }
+        .poi-item { font-size: 12px; color: var(--text); padding: 3px 0; display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+        .poi-icon { flex-shrink: 0; width: 18px; text-align: center; }
+        .poi-tip { font-size: 11px; color: var(--success); font-style: italic; margin-top: 4px; padding-left: 26px; }
+
+        .tag {
+            display: inline-block; font-size: 10px; font-weight: 600;
+            padding: 2px 8px; border-radius: 0; margin-right: 4px; margin-top: 6px; border: 1px solid;
+        }
+        .tag-hike { background: #e8f5e9; color: #00823b; border-color: #00823b; }
+        .tag-monument { background: #e3f2fd; color: #1c69d4; border-color: #1c69d4; }
+        .tag-view { background: #fff3e0; color: #e89b00; border-color: #e89b00; }
+        .tag-drive { background: var(--elevated); color: var(--text-sec); border-color: var(--border); }
+        .tag-beach { background: #e0f7fa; color: #00796b; border-color: #00796b; }
+        .tag-food { background: #fce4ec; color: #c62828; border-color: #c62828; }
+        [data-theme="dark"] .tag-hike { background: #1b3a1b; color: #2ebd6b; border-color: #2ebd6b; }
+        [data-theme="dark"] .tag-monument { background: #0d2744; color: #4a8de6; border-color: #4a8de6; }
+        [data-theme="dark"] .tag-view { background: #3a2a00; color: #f0b840; border-color: #f0b840; }
+        [data-theme="dark"] .tag-beach { background: #003333; color: #4db6ac; border-color: #4db6ac; }
+        [data-theme="dark"] .tag-food { background: #3a1a1a; color: #e84060; border-color: #e84060; }
+
+        .drive-banner {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; background: var(--elevated);
+            border: 1px solid var(--border); font-size: 12px;
+            color: var(--text); margin-bottom: 10px;
+        }
+        .drive-banner strong { color: var(--accent); }
+
+        /* ── Map ── */
+        #map { flex: 1; height: 100vh; }
+
+        .custom-popup .leaflet-popup-content-wrapper { border-radius: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .custom-popup .leaflet-popup-content { margin: 14px 18px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.5; }
+        .popup-day { font-size: 11px; color: #1c69d4; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .popup-title { font-size: 15px; font-weight: 700; color: #262626; margin: 4px 0; }
+        .popup-desc { font-size: 13px; color: #555; }
+        .popup-km { font-size: 12px; color: #1c69d4; font-weight: 600; margin-top: 6px; }
+
+        .distance-label {
+            background: #000000; color: #ffffff; padding: 3px 8px;
+            font-size: 11px; font-weight: 700; border-radius: 0;
+            white-space: nowrap; border: 1px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .start-marker {
+            background: #000000; color: #ffffff; padding: 4px 10px;
+            font-size: 11px; font-weight: 700; border-radius: 0;
+            white-space: nowrap; border: 2px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; min-width: 100%; height: 50vh; }
+            #map { height: 50vh; }
+        }
+        a:focus-visible, button:focus-visible { outline: 2px solid #1c69d4; outline-offset: 2px; }
+
+        .route-toggle {
+            display: flex; gap: 0; border-bottom: 1px solid var(--border);
+        }
+        .route-btn {
+            flex: 1; padding: 10px 8px; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.02em;
+            background: var(--elevated); color: var(--text-sec);
+            border: none; border-bottom: 3px solid transparent;
+            cursor: pointer; transition: all 0.15s;
+            font-family: inherit;
+        }
+        .route-btn { border-right: 1px solid var(--border); }
+        .route-btn:last-child { border-right: none; }
+        .route-btn.active {
+            background: var(--card); color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        .route-btn:hover:not(.active) { background: var(--card); }
+        .route-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="header-controls">
+                <div>
+                    <h1>🇬🇷 Greece Road Trip</h1>
+                    <div class="subtitle">8 days · Athens loop · Jun 14–21, 2026</div>
+                    <div class="flight-info">
+                        <span>✈️ Arrive: Lisbon → Athens (ATH) · Sat Jun 14 morning</span>
+                        <span>✈️ Depart: Athens (ATH) → Lisbon · Sat Jun 21 afternoon</span>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode (Alt+D)">☀️</button>
+            </div>
+        </div>
+        <div class="stats-bar">
+            <div class="stat" id="statKm"><div class="stat-value">1,320</div><div class="stat-label">Total km</div></div>
+            <div class="stat"><div class="stat-value">8</div><div class="stat-label">Days</div></div>
+            <div class="stat"><div class="stat-value" id="statRegions">6</div><div class="stat-label">Regions</div></div>
+            <div class="stat"><div class="stat-value">35+</div><div class="stat-label">POIs</div></div>
+        </div>
+        <div class="route-toggle">
+            <button class="route-btn active" data-route="mountain" aria-pressed="true">🏛️ A: Monument</button>
+            <button class="route-btn" data-route="coast" aria-pressed="false">🏖️ B: Coast</button>
+            <button class="route-btn" data-route="nature" aria-pressed="false">⛰️ C: Nature</button>
+            <button class="route-btn" data-route="peloponnese" aria-pressed="false">🏺 D: Peloponnese</button>
+        </div>
+        <div id="dayCards"></div>
+    </aside>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        /* ── Theme ── */
+        const saved = localStorage.getItem('theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+        const toggle = document.getElementById('themeToggle');
+        function setTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('theme', t);
+            toggle.textContent = t === 'dark' ? '🌙' : '☀️';
+        }
+        toggle.addEventListener('click', () => {
+            setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+        document.addEventListener('keydown', e => { if (e.altKey && e.key === 'd') { toggle.click(); e.preventDefault(); } });
+        if (saved === 'dark') toggle.textContent = '🌙';
+
+        /* ═══════════════════════════════════════════════════════════
+           SHARED DAYS 1–2 (all routes)
+           Athens ✈️ → Delphi → Ioannina
+           ═══════════════════════════════════════════════════════════ */
+        const sharedDays = [
+            {
+                day: 1, date: "Sat, Jun 14", name: "Athens → Delphi", lat: 38.4824, lng: 22.5010,
+                color: "#533483", driveFromPrev: 180, driveTime: "2 h 30 min", driveLabel: "from Athens Airport",
+                tagline: "Morning flight · Afternoon at the Oracle of Delphi",
+                desc: "Land in Athens in the morning, pick up your rental car at the airport, and drive west to Delphi (2.5 h via the Athens-Corinth highway and Livadia). Arrive around noon. Afternoon: explore the archaeological site clinging to Mount Parnassus, walk to the Tholos of Athena Pronaia, and catch sunset from the ancient theater overlooking the olive valley. Sleep in Delphi village.",
+                pois: [
+                    { icon: "✈️", text: "Arrive Athens (ATH) morning — pick up rental car at airport" },
+                    { icon: "🏛️", text: "⭐ Archaeological Site — Temple of Apollo, Treasury of Athens, theater (UNESCO, 2 h)" },
+                    { icon: "🏛️", text: "⭐ Tholos of Athena Pronaia — iconic circular temple (10 min walk from main site)" },
+                    { icon: "👁️", text: "⭐ Ancient Theater sunset — olive valley panorama at golden hour" },
+                    { icon: "🍽️", text: "Delphi village — tavernas with valley views, try local lamb" }
+                ],
+                tags: ["monument", "view"],
+                tip: "💡 Noon arrival → 12:30 site → 3 PM Tholos → taverna lunch → 8:30 PM theater sunset."
+            },
+            {
+                day: 2, date: "Sun, Jun 15", name: "Delphi → Ioannina", lat: 39.6650, lng: 20.8537,
+                color: "#0f3460", driveFromPrev: 280, driveTime: "3 h 30 min", driveLabel: "from Delphi via Rio-Antirrio",
+                tagline: "Museum morning · Bridge crossing · Byzantine fortress & lake island",
+                desc: "Morning: visit the Delphi Museum (air-conditioned, world-class bronzes and friezes). Then drive northwest across the spectacular Rio-Antirrio bridge, the longest cable-stayed bridge in Europe, and up the Ionian coast highway to Ioannina (arrive ~3 PM). Afternoon: walk the Its Kale Fortress and take the boat to the lake island for the Ali Pasha Museum. Dinner in the old bazaar.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ AM: Delphi Museum — Charioteer bronze, Sphinx of Naxos (1.5 h, air-conditioned)" },
+                    { icon: "🌉", text: "Drive: Rio-Antirrio bridge — 2.8 km cable-stayed bridge over the Gulf of Corinth" },
+                    { icon: "🏛️", text: "⭐ PM: Its Kale Fortress — Byzantine citadel, mosques, lake views (1 h)" },
+                    { icon: "🏛️", text: "⭐ PM: Ali Pasha Museum — lake island boat ride + Ottoman history (1.5 h)" },
+                    { icon: "🍽️", text: "Old bazaar area — souvlaki & grilled meats, lively evening" }
+                ],
+                tags: ["monument", "view", "food"],
+                tip: "💡 9 AM museum → 10:30 depart Delphi → 2 PM Ioannina → 3 PM fortress → 4:30 boat to island → 6:30 bazaar dinner."
+            }
+        ];
+
+        /* ═══════════════════════════════════════════════════════════
+           ROUTE A: MONUMENT — Days 3–8
+           Zagori → Meteora → Olympus → Athens
+           ═══════════════════════════════════════════════════════════ */
+        const monumentDays = [
+            {
+                day: 3, date: "Mon, Jun 16", name: "Zagori Highlands", lat: 39.9100, lng: 20.7530,
+                color: "#0f3460", driveFromPrev: 45, driveTime: "45 min", driveLabel: "from Ioannina to Zagori",
+                tagline: "Gorge viewpoints · Stone bridges · Mountain villages",
+                desc: "Drive 45 min into the Zagori highlands for a full day of viewpoints and villages. Start at the Oxya glass platform (900 m sheer drop into Vikos Gorge), hike to the Beloi viewpoint, visit the triple-arched Plakidas Bridge, and explore the stone villages of Monodendri or Papingo. Sleep in a traditional Zagori guesthouse.",
+                pois: [
+                    { icon: "👁️", text: "⭐ Oxya Viewpoint — glass platform, 900 m sheer drop over Vikos Gorge (20 min from parking)" },
+                    { icon: "🥾", text: "⭐ Beloi Viewpoint (30 min hike from Vradeto) — gorge panorama" },
+                    { icon: "🏛️", text: "⭐ Plakidas Bridge (Kalogeriko) — triple-arched 18th c. stone bridge" },
+                    { icon: "🏘️", text: "Monodendri or Papingo village — stone houses, taverna dinner" },
+                    { icon: "👁️", text: "Vikos Gorge rim — one of the world's deepest gorges relative to width" }
+                ],
+                tags: ["hike", "view", "monument"],
+                tip: "💡 9 AM Oxya → 11 AM Beloi hike → 1 PM lunch in village → 3 PM bridge → 5 PM village stroll + dinner."
+            },
+            {
+                day: 4, date: "Tue, Jun 17", name: "Zagori → Meteora", lat: 39.7217, lng: 21.6306,
+                color: "#533483", driveFromPrev: 165, driveTime: "2 h", driveLabel: "from Zagori",
+                tagline: "Monasteries in the sky · Sandstone pillars & panoramic sunset",
+                desc: "Drive east across Epirus to the Thessaly plain (arrive ~noon). Visit two monasteries before they close at 3-4 PM, then walk the forest trails between the towering rock pillars. Finish at the Psaropetra viewpoint for sunset over all six monasteries.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Great Meteoron Monastery — the largest, 14th c., museum & frescoes (allow 1.5 h)" },
+                    { icon: "🏛️", text: "⭐ Varlaam Monastery — rooftop panorama, stunning frescoes (allow 1 h)" },
+                    { icon: "🏛️", text: "Alt: Holy Trinity Monastery — most dramatic setting (featured in James Bond)" },
+                    { icon: "🥾", text: "⭐ Meteora footpath network (3-6 km loops) — after monastery hours, 3-6 PM" },
+                    { icon: "👁️", text: "⭐ Psaropetra sunset viewpoint — all six monasteries visible (~8:30 PM)" }
+                ],
+                tags: ["monument", "hike", "view"],
+                tip: "💡 Noon arrival → 2 monasteries → lunch Kalambaka → afternoon trails → Psaropetra sunset. Covered shoulders/knees required."
+            },
+            {
+                day: 5, date: "Wed, Jun 18", name: "Meteora → Olympus", lat: 40.1034, lng: 22.5020,
+                color: "#c91432", driveFromPrev: 155, driveTime: "2 h 10 min", driveLabel: "from Meteora",
+                tagline: "Home of the gods · Mountain trails & gorge waterfalls",
+                desc: "Drive northeast to Litochoro at the base of Greece's highest peak (2,917 m). Afternoon on the Enipeas Gorge trail — a lush river canyon with waterfalls and wooden bridges in the shadow of Olympus. Shaded, river-cooled, perfect for June heat.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Enipeas Gorge trail (8 km, 3-4 h) — waterfalls, river crossings, forest canopy" },
+                    { icon: "🏛️", text: "Monastery of Agios Dionysios (16th c.) — perched in the forest on the gorge edge" },
+                    { icon: "👁️", text: "Litochoro waterfront & Olympus skyline — cafe views of the peak" },
+                    { icon: "🍽️", text: "Litochoro plateia — lively square with tavernas, try lamb kleftiko" }
+                ],
+                tags: ["hike", "monument", "view"],
+                tip: "💡 The Enipeas Gorge is perfect for a hot June afternoon — shaded, river-cooled, and no special gear needed."
+            },
+            {
+                day: 6, date: "Thu, Jun 19", name: "Olympus — Summit Push", lat: 40.0859, lng: 22.3500,
+                color: "#c91432", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Full day alpine hike · Prionia to the mountain refuges",
+                desc: "Full day on Olympus. Drive to Prionia (1,100 m) and hike to Refuge A (2,100 m). Above the treeline: rocky peaks, wildflower meadows, and the Aegean shimmering below. Optional push to Skala peak (2,866 m) for those with energy.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Prionia → Refuge A / Spilios Agapitos (6 km, 3 h up) — alpine forest, mountain streams" },
+                    { icon: "🥾", text: "Optional: Refuge A → Skala peak (2,866 m, +2 h) — exposed ridge, 360° views" },
+                    { icon: "👁️", text: "Above the treeline (2,200 m+) — rocky moonscape, Aegean Sea visible on clear days" },
+                    { icon: "👁️", text: "Prionia lookout (1,100 m) — dense beech forest, waterfall nearby" }
+                ],
+                tags: ["hike", "view"],
+                tip: "💡 Start by 7 AM. Bring 2L water, layers, and sturdy shoes. No technical gear needed for Refuge A."
+            },
+            {
+                day: 7, date: "Fri, Jun 20", name: "Olympus → Athens", lat: 37.9715, lng: 23.7267,
+                color: "#c91432", driveFromPrev: 410, driveTime: "4 h 30 min", driveLabel: "from Litochoro via E75 highway",
+                tagline: "Highway south · Acropolis, ancient agora & sunset views",
+                desc: "The longest drive of the trip, but all highway (leave 7 AM, arrive ~11:30 AM via E75 through Thessaly and Boeotia). Full afternoon: Acropolis and Parthenon, Acropolis Museum, Monastiraki lunch, Ancient Agora, Plaka stroll. Finish at Philopappos Hill for sunset with the Acropolis glowing.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Acropolis & Parthenon — book timed tickets for noon (2 h)" },
+                    { icon: "🏛️", text: "⭐ Acropolis Museum — Parthenon frieze, air-conditioned (1.5 h)" },
+                    { icon: "🏛️", text: "⭐ Ancient Agora & Temple of Hephaestus — best-preserved Greek temple" },
+                    { icon: "👁️", text: "⭐ Philopappos Hill sunset (1.5 km loop) — Acropolis at golden hour" },
+                    { icon: "🍽️", text: "Monastiraki Square — souvlaki at Thanasis or Kostas, flee market" },
+                    { icon: "👁️", text: "Alt: Areopagus Rock — free, iconic sunset spot" }
+                ],
+                tags: ["monument", "view", "food"],
+                tip: "💡 7 AM depart → 11:30 Athens → noon Acropolis → 2:30 museum → 4 PM Agora → 6 PM Plaka → 8:30 sunset."
+            },
+            {
+                day: 8, date: "Sat, Jun 21", name: "Athens → ✈️ Lisbon", lat: 37.9715, lng: 23.7267,
+                color: "#16213e", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Morning free · Afternoon flight to Lisbon",
+                desc: "Your flight is in the afternoon, so you have the morning free. Visit the National Archaeological Museum, revisit a favorite spot, or just enjoy a long Greek breakfast in a Plaka cafe before driving to the airport.",
+                pois: [
+                    { icon: "🏛️", text: "Option: National Archaeological Museum — world's finest Greek antiquities (2 h)" },
+                    { icon: "🍽️", text: "Option: Long breakfast in Koukaki or Plaka, coffee in Monastiraki" },
+                    { icon: "🛒", text: "Option: Last-minute shopping in Plaka or Ermou Street" },
+                    { icon: "🚗", text: "Drop rental car at airport (arrive 2.5-3 h before flight)" },
+                    { icon: "✈️", text: "Athens (ATH) → Lisbon (LIS) — afternoon flight" }
+                ],
+                tags: ["monument", "food"],
+                tip: "💡 Leave for airport by ~noon. Drive from city center ~45 min, or metro Line 3 ~40 min from Syntagma."
+            }
+        ];
+
+        /* ═══════════════════════════════════════════════════════════
+           ROUTE B: COAST — Days 3–8
+           Zagori (quick) → Meteora → Olympus → Thessaloniki → Pelion → Athens
+           ═══════════════════════════════════════════════════════════ */
+        const coastDays = [
+            {
+                day: 3, date: "Mon, Jun 16", name: "Zagori → Meteora", lat: 39.7217, lng: 21.6306,
+                color: "#009A97", driveFromPrev: 210, driveTime: "2 h 45 min", driveLabel: "from Ioannina via Zagori viewpoint",
+                tagline: "Morning viewpoint · Afternoon monasteries in the sky",
+                desc: "Quick morning detour to Zagori for the Oxya Viewpoint (30 min from Ioannina, the glass platform over Vikos Gorge), then continue east to Meteora (arrive ~noon). This route compresses the mountains to save days for the coast. Visit two monasteries and finish with sunset at Psaropetra.",
+                pois: [
+                    { icon: "👁️", text: "⭐ AM: Oxya Viewpoint — glass platform, 900 m drop over Vikos Gorge" },
+                    { icon: "🏛️", text: "⭐ PM: Great Meteoron Monastery — largest, 14th c., museum & frescoes (1.5 h)" },
+                    { icon: "🏛️", text: "⭐ PM: Varlaam Monastery — rooftop panorama, stunning frescoes (1 h)" },
+                    { icon: "👁️", text: "⭐ Psaropetra sunset — all six monasteries visible (~8:30 PM)" }
+                ],
+                tags: ["monument", "view"],
+                tip: "💡 8 AM Oxya → 10 AM depart for Meteora → noon arrival → 2 monasteries → Psaropetra sunset. Tight but doable."
+            },
+            {
+                day: 4, date: "Tue, Jun 17", name: "Meteora → Olympus", lat: 40.1034, lng: 22.5020,
+                color: "#009A97", driveFromPrev: 155, driveTime: "2 h 10 min", driveLabel: "from Meteora",
+                tagline: "Home of the gods · Gorge waterfalls & river trails",
+                desc: "Drive northeast to Litochoro at the base of Mount Olympus. Afternoon on the Enipeas Gorge trail — a shaded river canyon with waterfalls and wooden bridges. River-cooled and perfect for hot June weather.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Enipeas Gorge trail (8 km, 3-4 h) — waterfalls, river crossings, forest canopy" },
+                    { icon: "🏛️", text: "Monastery of Agios Dionysios (16th c.) — perched on the gorge edge" },
+                    { icon: "🍽️", text: "Litochoro plateia — tavernas, try lamb kleftiko" }
+                ],
+                tags: ["hike", "view"],
+                tip: "💡 The gorge is river-cooled and shaded — perfect for a hot June afternoon."
+            },
+            {
+                day: 5, date: "Wed, Jun 18", name: "Olympus — Summit Push", lat: 40.0859, lng: 22.3500,
+                color: "#009A97", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Full day alpine hike · Prionia to the mountain refuges",
+                desc: "Full day on Olympus. Drive to Prionia (1,100 m) and hike to Refuge A (2,100 m). Optional push to Skala peak (2,866 m). Above the treeline: rocky peaks, wildflower meadows, Aegean shimmering below.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Prionia → Refuge A / Spilios Agapitos (6 km, 3 h up) — alpine forest, streams" },
+                    { icon: "🥾", text: "Optional: Refuge A → Skala peak (2,866 m, +2 h) — exposed ridge, 360° views" },
+                    { icon: "👁️", text: "Above the treeline (2,200 m+) — rocky moonscape, Aegean visible on clear days" }
+                ],
+                tags: ["hike", "view"],
+                tip: "💡 Start by 7 AM. Bring 2L water, layers, and sturdy shoes."
+            },
+            {
+                day: 6, date: "Thu, Jun 19", name: "Thessaloniki", lat: 40.6401, lng: 22.9444,
+                color: "#009A97", driveFromPrev: 90, driveTime: "1 h 10 min", driveLabel: "from Litochoro",
+                tagline: "Greece's food capital · Byzantine walls & waterfront",
+                desc: "Short drive to Thessaloniki, Greece's vibrant second city. Walk the seaside promenade, explore Byzantine churches and the old upper town (Ano Poli), and eat your way through the best food scene in the country. The White Tower at sunset is iconic.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ White Tower — city symbol, Byzantine museum inside, waterfront views" },
+                    { icon: "🏛️", text: "⭐ Rotunda & Arch of Galerius — Roman-era monuments, stunning mosaics" },
+                    { icon: "🏛️", text: "⭐ Ano Poli (Upper Town) — Byzantine walls, panoramic city views, cobblestone lanes" },
+                    { icon: "🥾", text: "⭐ Byzantine Walls walk (2 km) — Trigoniou Tower to Ano Poli, city + sea views" },
+                    { icon: "🍽️", text: "⭐ Ladadika & Modiano Market — bougatsa, mussels, souvlaki, craft beer" },
+                    { icon: "👁️", text: "Waterfront promenade sunset — Thermaic Gulf, Mount Olympus visible across the bay" }
+                ],
+                tags: ["monument", "food", "view"],
+                tip: "💡 Thessaloniki is about eating. Try bougatsa at Bantis, souvlaki at Derlicatessen, and mussels at Ouzou Melathron."
+            },
+            {
+                day: 7, date: "Fri, Jun 20", name: "Pelion → Athens", lat: 39.4300, lng: 23.0200,
+                color: "#009A97", driveFromPrev: 220, driveTime: "2 h 30 min", driveLabel: "from Thessaloniki to Pelion",
+                tagline: "Beach hike morning · Thermopylae stop · Evening in Athens",
+                desc: "Leave Thessaloniki early and drive to Pelion (arrive ~10 AM). Hike the ancient kalderimi trail down to Mylopotamos Beach through forest canopy, swim in turquoise water, then drive south to Athens (320 km, ~4 h) with an optional Thermopylae monument stop on the highway. Long driving day, but you get beach, history, and an Athens evening.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Kalderimi trail: Tsagarada → Mylopotamos (2.5 km, 45 min down) — forest to beach" },
+                    { icon: "🏖️", text: "⭐ Mylopotamos Beach — white pebbles, rock arch, turquoise water, swim + lunch" },
+                    { icon: "👁️", text: "Tsagarada village — 1,000-year-old plane tree, mountain views" },
+                    { icon: "🏛️", text: "Optional: Thermopylae monument & hot springs (right off the highway, 20 min)" },
+                    { icon: "🍽️", text: "Evening: arrive Athens ~8 PM, dinner in Psyrri or Monastiraki" }
+                ],
+                tags: ["hike", "beach", "monument"],
+                tip: "💡 Leave Thessaloniki 7:30 AM → Pelion 10 AM → swim + hike until 1 PM → drive south → Thermopylae 4 PM → Athens 8 PM."
+            },
+            {
+                day: 8, date: "Sat, Jun 21", name: "Athens → ✈️ Lisbon", lat: 37.9715, lng: 23.7267,
+                color: "#c91432", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Morning Acropolis · Afternoon flight to Lisbon",
+                desc: "You arrived last night. Morning: Acropolis + museum (book 8 AM timed tickets for thin crowds and cool air). Quick lunch in Monastiraki. Then drive to the airport for your afternoon flight.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Acropolis & Parthenon — book 8 AM timed tickets, beat the heat (2 h)" },
+                    { icon: "🏛️", text: "⭐ Acropolis Museum — Parthenon frieze, air-conditioned (1.5 h)" },
+                    { icon: "🍽️", text: "Quick lunch: Monastiraki Square — souvlaki at Thanasis (30 min)" },
+                    { icon: "🚗", text: "Drop rental car at airport (arrive 2.5-3 h before flight)" },
+                    { icon: "✈️", text: "Athens (ATH) → Lisbon (LIS) — afternoon flight" }
+                ],
+                tags: ["monument", "food"],
+                tip: "💡 8 AM Acropolis → 10:30 museum → 12 PM lunch → 12:45 drive to airport (~45 min)."
+            }
+        ];
+
+        /* ═══════════════════════════════════════════════════════════
+           ROUTE C: DEEP NATURE & HIKING — Days 3–8
+           Drakolimni → Meteora → Olympus (gorge + summit) → Athens
+           ═══════════════════════════════════════════════════════════ */
+        const natureDays = [
+            {
+                day: 3, date: "Mon, Jun 16", name: "Zagori: Drakolimni", lat: 39.9850, lng: 20.7700,
+                color: "#0f3460", driveFromPrev: 60, driveTime: "1 h", driveLabel: "from Ioannina to Mikro Papingo",
+                tagline: "Dragon Lake alpine hike · 2,050 m · Wild horses & zero tourists",
+                desc: "The most remote day of the trip. Drive from Ioannina to the tiny stone village of Mikro Papingo, then hike to Drakolimni (Dragon Lake) at 2,050 m — a glacial lake surrounded by rocky peaks where wild horses roam. You will see almost no one. This is pure, untouched Greek wilderness. Return to Zagori for dinner and a guesthouse.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Drakolimni (Dragon Lake) hike from Mikro Papingo (12 km round trip, 5-6 h)" },
+                    { icon: "👁️", text: "⭐ Dragon Lake — glacial alpine lake at 2,050 m, surrounded by Mount Tymfi peaks" },
+                    { icon: "🐴", text: "Wild horses grazing on the alpine meadows above the lake" },
+                    { icon: "👁️", text: "360° mountain panorama from Astraka col — Vikos Gorge visible far below" },
+                    { icon: "🏘️", text: "Evening: return to Papingo village for taverna dinner & guesthouse" }
+                ],
+                tags: ["hike", "view"],
+                tip: "💡 Start by 7 AM, bring 2L water + snacks + layers (cold at altitude even in June). Trail is well-marked but steep. Sturdy shoes essential."
+            },
+            {
+                day: 4, date: "Tue, Jun 17", name: "Zagori → Meteora", lat: 39.7217, lng: 21.6306,
+                color: "#533483", driveFromPrev: 165, driveTime: "2 h", driveLabel: "from Zagori",
+                tagline: "Monasteries in the sky · Forest trails & sunset viewpoint",
+                desc: "Drive east to Meteora (arrive ~noon). Visit two monasteries before closing, then hike the forest footpaths between the towering rock pillars. Finish at Psaropetra for sunset over all six monasteries.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Great Meteoron Monastery — the largest, 14th c., frescoes (1.5 h)" },
+                    { icon: "🏛️", text: "⭐ Varlaam Monastery — rooftop panorama, frescoes (1 h)" },
+                    { icon: "🥾", text: "⭐ Meteora footpath network (3-6 km loops) — forest trails between pillars, 3-6 PM" },
+                    { icon: "👁️", text: "⭐ Psaropetra sunset viewpoint — all six monasteries visible (~8:30 PM)" }
+                ],
+                tags: ["monument", "hike", "view"],
+                tip: "💡 Monasteries close 3-4 PM. Covered shoulders/knees required. The trails after closing time are peaceful."
+            },
+            {
+                day: 5, date: "Wed, Jun 18", name: "Meteora → Olympus", lat: 40.1034, lng: 22.5020,
+                color: "#c91432", driveFromPrev: 155, driveTime: "2 h 10 min", driveLabel: "from Meteora",
+                tagline: "Home of the gods · Enipeas Gorge waterfalls",
+                desc: "Drive to Litochoro at the base of Mount Olympus. Afternoon on the Enipeas Gorge trail — a lush river canyon with waterfalls and wooden bridges, shaded and river-cooled. Perfect warm-up for tomorrow's summit push.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Enipeas Gorge trail (8 km, 3-4 h) — waterfalls, river crossings, forest canopy" },
+                    { icon: "🏛️", text: "Monastery of Agios Dionysios (16th c.) — perched on the gorge edge" },
+                    { icon: "👁️", text: "Litochoro waterfront — cafe views of the Olympus skyline" },
+                    { icon: "🍽️", text: "Litochoro plateia — tavernas, try lamb kleftiko" }
+                ],
+                tags: ["hike", "monument", "view"],
+                tip: "💡 The gorge is shaded and river-cooled — perfect for a hot June afternoon. Early dinner, early bed for tomorrow."
+            },
+            {
+                day: 6, date: "Thu, Jun 19", name: "Olympus — Summit Push", lat: 40.0859, lng: 22.3500,
+                color: "#c91432", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Full day alpine hike · Prionia to Skala peak (2,866 m)",
+                desc: "The big one. Start at 6 AM from Prionia, hike to Refuge A (3 h), then push to Skala peak at 2,866 m (+2 h). Above the treeline it is a different world — exposed ridges, rocky moonscape, Aegean shimmering far below. Descend and return to Litochoro by late afternoon.",
+                pois: [
+                    { icon: "🥾", text: "⭐ Prionia → Refuge A / Spilios Agapitos (6 km, 3 h) — forest, streams" },
+                    { icon: "🥾", text: "⭐ Refuge A → Skala peak (2,866 m, +2 h) — exposed ridge, 360° views" },
+                    { icon: "👁️", text: "⭐ Skala summit — see the Aegean, Thessaly plain, and Mytikas (highest point) across the gap" },
+                    { icon: "👁️", text: "Above treeline (2,200 m+) — wildflower meadows, rocky moonscape" }
+                ],
+                tags: ["hike", "view"],
+                tip: "💡 Start 6 AM. Bring 3L water, snacks, layers, rain jacket. The Skala ridge is exposed but non-technical. Return by 4 PM."
+            },
+            {
+                day: 7, date: "Fri, Jun 20", name: "Olympus → Athens", lat: 37.9715, lng: 23.7267,
+                color: "#c91432", driveFromPrev: 410, driveTime: "4 h 30 min", driveLabel: "from Litochoro via E75 highway",
+                tagline: "Long drive south · Afternoon & evening in Athens",
+                desc: "The longest drive (leave 7 AM, arrive ~noon). After 5 days in the wild, Athens hits differently. Afternoon: Acropolis + museum. Evening: Monastiraki souvlaki and Philopappos Hill sunset. You have earned the cold beer.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Acropolis & Parthenon — book 1 PM timed tickets (2 h)" },
+                    { icon: "🏛️", text: "⭐ Acropolis Museum — air-conditioned, Parthenon frieze (1.5 h)" },
+                    { icon: "👁️", text: "⭐ Philopappos Hill sunset (1.5 km loop) — Acropolis glowing at golden hour" },
+                    { icon: "🍽️", text: "Monastiraki Square — souvlaki, flea market, rooftop bars" },
+                    { icon: "👁️", text: "Alt: Areopagus Rock sunset — free, iconic, 5 min from Acropolis" }
+                ],
+                tags: ["monument", "view", "food"],
+                tip: "💡 Noon arrival → 1 PM Acropolis → 3:30 museum → 5:30 Monastiraki → 8 PM Philopappos sunset."
+            },
+            {
+                day: 8, date: "Sat, Jun 21", name: "Athens → ✈️ Lisbon", lat: 37.9715, lng: 23.7267,
+                color: "#16213e", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Morning free · Afternoon flight to Lisbon",
+                desc: "Morning free before your afternoon flight. Revisit a spot, visit the National Archaeological Museum, or just enjoy a slow Greek breakfast and coffee before heading to the airport.",
+                pois: [
+                    { icon: "🏛️", text: "Option: National Archaeological Museum (2 h)" },
+                    { icon: "🍽️", text: "Option: Long breakfast in Koukaki or Plaka" },
+                    { icon: "🚗", text: "Drop rental car at airport" },
+                    { icon: "✈️", text: "Athens (ATH) → Lisbon (LIS) — afternoon flight" }
+                ],
+                tags: ["monument", "food"],
+                tip: "💡 Leave for airport by ~noon. Drive from center ~45 min."
+            }
+        ];
+
+        /* ═══════════════════════════════════════════════════════════
+           ROUTE D: PELOPONNESE — ANCIENT KINGDOMS — Days 1–8
+           Independent route (does NOT share Days 1-2 with the north)
+           Athens → Mycenae → Nafplio → Monemvasia → Mystras → Mani → Olympia → Athens
+           ═══════════════════════════════════════════════════════════ */
+        const peloponneseDays = [
+            {
+                day: 1, date: "Sat, Jun 14", name: "Athens → Mycenae → Nafplio", lat: 37.5675, lng: 22.8028,
+                color: "#b45309", driveFromPrev: 150, driveTime: "2 h", driveLabel: "from Athens Airport via Corinth Canal",
+                tagline: "Morning flight · Corinth Canal · Mycenae · Nafplio evening",
+                desc: "Land in Athens in the morning, pick up your car, and drive south into the Peloponnese. First stop: the Corinth Canal (10 min photo stop, a dramatic 80 m deep slit through rock). Continue to Ancient Mycenae, Agamemnon's citadel from the Bronze Age. Walk through the Lion Gate, see the Treasury of Atreus (Agamemnon's Tomb), and stand where the Mycenaean civilization once commanded the Mediterranean. Then drive 25 min to Nafplio, the first capital of modern Greece. Evening stroll along the waterfront with views of the Bourtzi island fortress. Sleep in Nafplio old town.",
+                pois: [
+                    { icon: "✈️", text: "Arrive Athens (ATH) morning — pick up rental car at airport" },
+                    { icon: "👁️", text: "⭐ Corinth Canal — 6 km cut through solid rock, 80 m deep (photo stop)" },
+                    { icon: "🏛️", text: "⭐ Ancient Mycenae — Lion Gate, Treasury of Atreus, Bronze Age citadel (UNESCO, 1.5 h)" },
+                    { icon: "👁️", text: "⭐ Nafplio waterfront — Bourtzi island fortress, Venetian old town" },
+                    { icon: "🍽️", text: "Nafplio old town — gelato, seafood tavernas on Syntagma Square" }
+                ],
+                tags: ["monument", "view", "food"],
+                tip: "💡 10 AM airport → 11 AM Corinth Canal (10 min) → 12 PM Mycenae (1.5 h) → 2 PM Nafplio. Evening free."
+            },
+            {
+                day: 2, date: "Sun, Jun 15", name: "Epidaurus + Nafplio", lat: 37.5960, lng: 23.0790,
+                color: "#b45309", driveFromPrev: 30, driveTime: "40 min", driveLabel: "from Nafplio to Epidaurus",
+                tagline: "World's most perfect theater · Palamidi fortress 999 steps",
+                desc: "Morning: drive to Ancient Epidaurus, home of the most acoustically perfect theater in the ancient world (test it: drop a coin on the stage floor, and hear it from the top row 60 m away). Visit the Asklepieion healing sanctuary. Afternoon back in Nafplio: climb the 999 steps to Palamidi Fortress for the best panoramic views in the Argolid (or drive up if legs say no). Evening: Nafplio old town, Venetian balconies, narrow lanes, sunset from the seaside promenade.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ AM: Ancient Epidaurus theater — whisper test from 60 m, 14,000 seats (UNESCO, 1.5 h)" },
+                    { icon: "🏛️", text: "AM: Asklepieion sanctuary — ancient healing center dedicated to Asklepios" },
+                    { icon: "🥾", text: "⭐ PM: Palamidi Fortress — 999 steps, 216 m above sea, 360° views (1 h)" },
+                    { icon: "👁️", text: "Bourtzi Castle — small island fortress in the harbor (visible from waterfront)" },
+                    { icon: "🍽️", text: "Nafplio old town — Syntagma Square cafes, fresh fish at Arapakos" }
+                ],
+                tags: ["monument", "hike", "view", "food"],
+                tip: "💡 8:30 AM Epidaurus (cool, empty) → 11 AM back Nafplio → lunch → 4 PM Palamidi (avoid midday heat) → sunset stroll."
+            },
+            {
+                day: 3, date: "Mon, Jun 16", name: "Nafplio → Monemvasia", lat: 36.6875, lng: 23.0558,
+                color: "#0f3460", driveFromPrev: 200, driveTime: "2 h 30 min", driveLabel: "from Nafplio",
+                tagline: "Gibraltar of Greece · Medieval rock fortress floating in the Aegean",
+                desc: "Drive south along the Laconian coast to Monemvasia, a massive rock jutting out of the sea connected to the mainland by a single causeway. The entire medieval lower town is hidden behind the rock, invisible until you walk through the gate. Explore cobblestone lanes, Byzantine churches, and climb to the upper citadel ruins for views stretching to Crete on a clear day. Sunset from the fortress walls is unforgettable. Sleep inside the walls (yes, there are boutique hotels inside the medieval town).",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Lower Town — walk through the single gate, medieval lanes, Byzantine churches" },
+                    { icon: "🥾", text: "⭐ Upper Citadel hike (30 min up) — ruined fortress, Agia Sofia church, sea panorama" },
+                    { icon: "👁️", text: "⭐ Sunset from the fortress walls — Aegean stretching to Crete on clear days" },
+                    { icon: "🏛️", text: "Christos Elkomenos church (13th c.) — carved stone peacocks, Byzantine frescoes" },
+                    { icon: "🍽️", text: "Tavernas inside the walls — candlelit dinners in a medieval town with no cars" }
+                ],
+                tags: ["monument", "hike", "view", "food"],
+                tip: "💡 Arrive ~1 PM → lunch inside the walls → 3 PM explore lower town → 5 PM upper citadel hike → 8:30 PM sunset dinner."
+            },
+            {
+                day: 4, date: "Tue, Jun 17", name: "Monemvasia → Mystras", lat: 37.0750, lng: 22.3660,
+                color: "#533483", driveFromPrev: 100, driveTime: "1 h 30 min", driveLabel: "from Monemvasia",
+                tagline: "Byzantine ghost city on a mountainside · Frescoed churches & palace ruins",
+                desc: "Optional sunrise from Monemvasia's upper citadel (worth the early alarm). Then drive northwest to Mystras, a UNESCO-listed Byzantine ghost city clinging to a steep hillside above Sparta. This was the last capital of the Byzantine Empire before it fell to the Ottomans. Wander through ruined palaces, intact frescoed churches, and monastery gardens with views across the Eurotas Valley to the Taygetos mountains. Afternoon: quick stop in modern Sparta for a photo with the Leonidas statue.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Mystras — Byzantine ghost city: Palace of the Despots, Pantanassa monastery (UNESCO, 3 h)" },
+                    { icon: "🏛️", text: "⭐ Peribleptos Monastery — finest 14th c. frescoes in Greece, hidden in the rock" },
+                    { icon: "👁️", text: "⭐ Views from the upper castle — Eurotas Valley, Taygetos mountains, olive groves below" },
+                    { icon: "🏛️", text: "Sparta: statue of King Leonidas + Archaeological Museum (30 min)" },
+                    { icon: "🍽️", text: "Sparta or Mystras village — hearty Laconian cuisine, local oranges" }
+                ],
+                tags: ["monument", "view"],
+                tip: "💡 10 AM arrive Mystras → enter from upper gate, walk downhill (easier) → 3 h exploring → 1 PM lunch → 3 PM Sparta → evening in Mystras village or Gytheio."
+            },
+            {
+                day: 5, date: "Wed, Jun 18", name: "Mani Peninsula", lat: 36.6500, lng: 22.3900,
+                color: "#16213e", driveFromPrev: 80, driveTime: "1 h 30 min", driveLabel: "from Mystras to Areopoli",
+                tagline: "Tower villages · Sea caves · Europe's wild south · Gateway to Hades",
+                desc: "Drive south into the Mani, the wildest and most dramatic peninsula in Greece. The Inner Mani is a landscape of stone tower villages, Byzantine chapels, and rugged coastline. Visit the Diros sea caves by boat (underground lake, stalactites reflecting in still water), drive to Vathia (an abandoned stone tower village on a clifftop), and optionally continue to Cape Tainaron, the southernmost point of mainland Greece and the ancient mythological entrance to the Underworld. Sleep in Areopoli or Gytheio.",
+                pois: [
+                    { icon: "👁️", text: "⭐ Diros Caves — underground sea caves by boat, stalactites reflecting in still water (45 min)" },
+                    { icon: "🏘️", text: "⭐ Vathia — abandoned stone tower village, dramatic clifftop setting, iconic photos" },
+                    { icon: "🏛️", text: "Optional: Cape Tainaron — southernmost mainland Europe, ruins of Temple of Poseidon, Hades entrance" },
+                    { icon: "🏘️", text: "Areopoli — main Mani town, stone architecture, Church of Taxiarches" },
+                    { icon: "🍽️", text: "Gytheio waterfront — fresh fish, octopus drying in the sun, Cranae island" }
+                ],
+                tags: ["monument", "view", "food"],
+                tip: "💡 9 AM Diros Caves (go early, queues build) → 11 AM drive south → 12 PM Vathia → 2 PM optional Cape Tainaron → 5 PM Gytheio for dinner."
+            },
+            {
+                day: 6, date: "Thu, Jun 19", name: "Mani → Olympia", lat: 37.6385, lng: 21.6297,
+                color: "#009A97", driveFromPrev: 250, driveTime: "3 h 30 min", driveLabel: "from Gytheio via Methoni & Voidokilia",
+                tagline: "Omega beach · Venetian fortress · Birthplace of the Olympic Games",
+                desc: "The longest drive day, but with two spectacular coastal stops. Drive west along the southern coast through Kalamata, then stop at Methoni Castle (a Venetian sea fortress connected by a stone bridge) and nearby Voidokilia Beach (a perfect omega-shaped crescent, one of Europe's most beautiful beaches). Continue north to Ancient Olympia, birthplace of the Olympic Games. Walk the ruins where athletes competed for 1,000 years, and run in the original stadium. Sleep in Olympia village.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ Methoni Castle — massive Venetian sea fortress, walk to the Bourtzi tower in the sea" },
+                    { icon: "🏖️", text: "⭐ Voidokilia Beach — perfect omega-shaped beach, golden sand, shallow turquoise water" },
+                    { icon: "🏛️", text: "⭐ Ancient Olympia — Temple of Zeus, Temple of Hera, gymnasium, original stadium (UNESCO, 2 h)" },
+                    { icon: "🏛️", text: "⭐ Run in the ancient Olympic stadium — stand on the original marble starting blocks" },
+                    { icon: "🍽️", text: "Olympia village — tavernas, try local wine from the Elis region" }
+                ],
+                tags: ["monument", "beach", "view"],
+                tip: "💡 8 AM depart → 10:30 Methoni (45 min) → 11:30 Voidokilia swim (1 h) → 2 PM Olympia → afternoon exploring ruins + museum."
+            },
+            {
+                day: 7, date: "Fri, Jun 20", name: "Olympia → Athens", lat: 37.9715, lng: 23.7267,
+                color: "#c91432", driveFromPrev: 310, driveTime: "3 h 30 min", driveLabel: "from Olympia via Patras highway",
+                tagline: "Museum morning · Highway east · Acropolis & sunset",
+                desc: "Morning: visit the Olympia Archaeological Museum (among the best in Greece, the original Hermes of Praxiteles is here). Then drive east via the Patras-Corinth-Athens highway (all motorway, easy driving). Arrive Athens ~1 PM. Afternoon: Acropolis and Parthenon, Acropolis Museum. Evening: Monastiraki souvlaki, Plaka stroll. Finish at Philopappos Hill for sunset with the Acropolis glowing above.",
+                pois: [
+                    { icon: "🏛️", text: "⭐ AM: Olympia Archaeological Museum — Hermes of Praxiteles, Temple of Zeus pediments (1.5 h)" },
+                    { icon: "🏛️", text: "⭐ PM: Acropolis & Parthenon — book 2 PM timed tickets (2 h)" },
+                    { icon: "🏛️", text: "⭐ PM: Acropolis Museum — Parthenon frieze, air-conditioned (1.5 h)" },
+                    { icon: "👁️", text: "⭐ Philopappos Hill sunset (1.5 km loop) — Acropolis at golden hour" },
+                    { icon: "🍽️", text: "Monastiraki Square — souvlaki at Thanasis, flea market, rooftop bars" }
+                ],
+                tags: ["monument", "view", "food"],
+                tip: "💡 9 AM museum → 10:30 depart → 2 PM Athens → Acropolis → 5 PM museum → 7 PM Monastiraki → 8:30 PM sunset."
+            },
+            {
+                day: 8, date: "Sat, Jun 21", name: "Athens → ✈️ Lisbon", lat: 37.9715, lng: 23.7267,
+                color: "#16213e", driveFromPrev: null, driveTime: null, driveLabel: null,
+                tagline: "Morning free · Afternoon flight to Lisbon",
+                desc: "Your flight is in the afternoon. Morning: revisit a favorite spot, or explore what the other routes missed. The Ancient Agora and Temple of Hephaestus are right next to Monastiraki. Or just enjoy a slow Greek breakfast in Plaka before driving to the airport.",
+                pois: [
+                    { icon: "🏛️", text: "Option: Ancient Agora & Temple of Hephaestus — best-preserved Greek temple (1.5 h)" },
+                    { icon: "🏛️", text: "Option: National Archaeological Museum — world's finest Greek antiquities (2 h)" },
+                    { icon: "🍽️", text: "Option: Long breakfast in Koukaki or Plaka, coffee in Monastiraki" },
+                    { icon: "🚗", text: "Drop rental car at airport (arrive 2.5-3 h before flight)" },
+                    { icon: "✈️", text: "Athens (ATH) → Lisbon (LIS) — afternoon flight" }
+                ],
+                tags: ["monument", "food"],
+                tip: "💡 Leave for airport by ~noon. Drive from city center ~45 min."
+            }
+        ];
+
+        /* ── Route config ── */
+        const routes = {
+            mountain:    { days: [...sharedDays, ...monumentDays], totalKm: 1320, regions: 6 },
+            coast:       { days: [...sharedDays, ...coastDays],    totalKm: 1500, regions: 7 },
+            nature:      { days: [...sharedDays, ...natureDays],   totalKm: 1290, regions: 6 },
+            peloponnese: { days: [...peloponneseDays],             totalKm: 1130, regions: 6 }
+        };
+        let currentRoute = 'mountain';
+
+        const athensStart = { lat: 37.9364, lng: 23.9445, name: "Athens Airport" };
+
+        /* ── Leaflet Map ── */
+        const map = L.map('map', { zoomControl: true }).setView([38.8, 22.0], 7);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            maxZoom: 19
+        }).addTo(map);
+
+        let mapLayers = [];
+        let markers = [];
+
+        function renderRoute(routeKey) {
+            currentRoute = routeKey;
+            const stops = routes[routeKey].days;
+
+            // Update stats
+            document.querySelector('#statKm .stat-value').textContent = routes[routeKey].totalKm.toLocaleString();
+            document.getElementById('statRegions').textContent = routes[routeKey].regions;
+
+            // Update toggle buttons
+            document.querySelectorAll('.route-btn').forEach(b => {
+                const isActive = b.dataset.route === routeKey;
+                b.classList.toggle('active', isActive);
+                b.setAttribute('aria-pressed', isActive);
+            });
+
+            // Clear sidebar
+            const container = document.getElementById('dayCards');
+            container.innerHTML = '';
+
+            // Build sidebar cards
+            stops.forEach((s, i) => {
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                let driveHTML = '';
+                if (s.driveFromPrev && s.driveLabel) {
+                    driveHTML = `<div class="drive-banner">🚗 <span>${s.driveLabel}: <strong>${s.driveFromPrev} km</strong> · ~${s.driveTime}</span></div>`;
+                }
+                const tagMap = { hike:'🥾 Hike', monument:'🏛️ Monument', view:'👁️ Views', beach:'🏖️ Beach', drive:'🚗 Drive', food:'🍽️ Food' };
+                const tagClassMap = { hike:'tag-hike', monument:'tag-monument', view:'tag-view', beach:'tag-beach', drive:'tag-drive', food:'tag-food' };
+                const tagsHTML = s.tags.map(t => `<span class="tag ${tagClassMap[t]}">${tagMap[t]}</span>`).join('');
+                const poisHTML = s.pois.map(p => `<li class="poi-item"><span class="poi-icon">${p.icon}</span><span>${p.text}</span></li>`).join('');
+                const tipHTML = s.tip ? `<div class="poi-tip">${s.tip}</div>` : '';
+                card.innerHTML = `${driveHTML}
+                    <div class="day-card-header">
+                        <div class="day-badge" style="background:${s.color}">${s.day}</div>
+                        <div>
+                            <div class="day-date">${s.date}</div>
+                            <div class="day-title">${s.name}</div>
+                            <div class="day-meta">${s.tagline}</div>
+                        </div>
+                    </div>
+                    <div class="day-desc">${s.desc}</div>
+                    <ul class="poi-list">${poisHTML}</ul>
+                    ${tipHTML}
+                    <div style="margin-top:4px">${tagsHTML}</div>`;
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.day-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    map.flyTo([s.lat, s.lng], 11, { duration: 1 });
+                    markers[i].openPopup();
+                });
+                container.appendChild(card);
+            });
+
+            // Clear map layers
+            mapLayers.forEach(l => map.removeLayer(l));
+            mapLayers = [];
+            markers = [];
+
+            // Route line (closed loop: airport → stops → airport)
+            const fullRoute = [
+                [athensStart.lat, athensStart.lng],
+                ...stops.map(s => [s.lat, s.lng]),
+                [athensStart.lat, athensStart.lng]
+            ];
+            const line = L.polyline(fullRoute, { color: '#1c69d4', weight: 3, opacity: 0.8, dashArray: '8, 6', smoothFactor: 1.5 }).addTo(map);
+            mapLayers.push(line);
+
+            // Airport start/end marker
+            const startM = L.marker([athensStart.lat, athensStart.lng], {
+                icon: L.divIcon({ className: '', html: `<div class="start-marker">✈️ Athens (ATH)</div>`, iconSize: [130, 24], iconAnchor: [65, 12] }),
+                interactive: false
+            }).addTo(map);
+            mapLayers.push(startM);
+
+            // Distance labels
+            const allPts = [{ lat: athensStart.lat, lng: athensStart.lng }, ...stops];
+            for (let i = 0; i < stops.length; i++) {
+                const s = stops[i];
+                if (!s.driveFromPrev || !s.driveLabel) continue;
+                const prev = i === 0 ? allPts[0] : stops[i - 1];
+                const m = L.marker([(prev.lat + s.lat) / 2, (prev.lng + s.lng) / 2], {
+                    icon: L.divIcon({ className: '', html: `<div class="distance-label">${s.driveFromPrev} km</div>`, iconSize: [60, 20], iconAnchor: [30, 10] }),
+                    interactive: false
+                }).addTo(map);
+                mapLayers.push(m);
+            }
+
+            // Day markers
+            stops.forEach((s) => {
+                const icon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background:${s.color};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ffffff;font-weight:700;font-size:15px;font-family:'Helvetica Neue',sans-serif;border:3px solid #ffffff;box-shadow:0 2px 10px rgba(0,0,0,0.35)">${s.day}</div>`,
+                    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -22]
+                });
+                const driveInfo = (s.driveFromPrev && s.driveLabel) ? `<div class="popup-km">🚗 ${s.driveFromPrev} km · ~${s.driveTime}</div>` : '';
+                const m = L.marker([s.lat, s.lng], { icon })
+                    .addTo(map)
+                    .bindPopup(`<div><div class="popup-day">Day ${s.day} · ${s.date}</div><div class="popup-title">${s.name}</div><div class="popup-desc">${s.tagline}</div>${driveInfo}</div>`, { className: 'custom-popup', maxWidth: 280 });
+                markers.push(m);
+                mapLayers.push(m);
+            });
+
+            map.fitBounds(L.latLngBounds(fullRoute), { padding: [40, 40] });
+        }
+
+        // Initial render
+        renderRoute('mountain');
+
+        // Route toggle
+        document.querySelectorAll('.route-btn').forEach(btn => {
+            btn.addEventListener('click', () => renderRoute(btn.dataset.route));
+        });
+    </script>
+</body>
+</html>
+

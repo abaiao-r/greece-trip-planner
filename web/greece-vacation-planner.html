@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greece Vacation Planner · Jun 14–21, 2026</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg: #f2f2f2;
+            --card: #ffffff;
+            --elevated: #e6e6e6;
+            --border: #d6d6d6;
+            --text: #262626;
+            --text-sec: #666666;
+            --accent: #1c69d4;
+            --accent-hover: #155bb8;
+            --success: #00823b;
+            --warning: #e89b00;
+            --error: #c91432;
+            --near-black: #1a1a1a;
+            --petrol: #009A97;
+        }
+        [data-theme="dark"] {
+            --bg: #111111;
+            --card: #1a1a1a;
+            --elevated: #2a2a2a;
+            --border: #4d4d4d;
+            --text: #ffffff;
+            --text-sec: #b2b2b2;
+            --accent: #1c69d4;
+            --accent-hover: #4a8de6;
+            --success: #2ebd6b;
+            --warning: #f0b840;
+            --error: #e84060;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.6;
+            transition: background 0.2s, color 0.2s;
+        }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid var(--accent); outline-offset: 2px;
+        }
+
+        /* ── Nav ── */
+        nav {
+            background: #000000; color: #ffffff;
+            padding: 14px 24px; position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        nav h1 { font-size: 16px; font-weight: 300; text-transform: uppercase; letter-spacing: 0.05em; }
+        nav .subtitle { font-size: 12px; color: #b2b2b2; margin-top: 2px; }
+        .theme-toggle {
+            background: none; border: 1px solid #666666; color: #ffffff;
+            width: 36px; height: 36px; cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; justify-content: center; border-radius: 0;
+        }
+
+        /* ── Container ── */
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px 20px 60px; }
+
+        /* ── Section headings ── */
+        .section-title {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--text-sec); margin-bottom: 12px;
+        }
+
+        /* ── Route picker ── */
+        .route-picker { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .route-card {
+            flex: 1; min-width: 200px; padding: 14px 16px;
+            background: var(--card); border: 2px solid var(--border);
+            cursor: pointer; transition: border-color 0.15s;
+        }
+        .route-card:hover { border-color: var(--accent); }
+        .route-card.active { border-color: var(--accent); background: var(--elevated); }
+        .route-card-name { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .route-card-name input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
+        .route-card-desc { font-size: 12px; color: var(--text-sec); margin-top: 4px; margin-left: 24px; }
+        .route-card-km { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; margin-left: 24px; }
+
+        /* ── Presets ── */
+        .preset-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .preset-btn {
+            padding: 8px 14px; font-size: 12px; font-weight: 600;
+            background: var(--card); border: 1px solid var(--border);
+            color: var(--text); cursor: pointer; font-family: inherit;
+            transition: all 0.15s; border-radius: 0;
+        }
+        .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .preset-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+        .preset-btn.clear { border-color: var(--error); color: var(--error); }
+        .preset-btn.clear:hover { background: var(--error); color: #ffffff; }
+
+        /* ── Day tabs ── */
+        .day-tabs {
+            display: flex; gap: 0; border: 1px solid var(--border); margin-bottom: 0;
+            overflow-x: auto; background: var(--card);
+        }
+        .day-tab {
+            flex: 1; min-width: 90px; padding: 10px 8px; text-align: center;
+            font-size: 11px; font-weight: 600; font-family: inherit;
+            background: var(--card); color: var(--text-sec);
+            border: none; border-right: 1px solid var(--border);
+            border-bottom: 3px solid transparent;
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .day-tab:last-child { border-right: none; }
+        .day-tab:hover { background: var(--elevated); }
+        .day-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--elevated); }
+        .day-tab .tab-day { font-size: 12px; font-weight: 700; }
+        .day-tab .tab-label { font-size: 10px; display: block; margin-top: 2px; }
+        .day-tab .tab-status { font-size: 9px; display: block; margin-top: 2px; }
+        .tab-ok { color: var(--success); }
+        .tab-warn { color: var(--warning); }
+        .tab-over { color: var(--error); }
+
+        /* ── Day content ── */
+        .day-content {
+            background: var(--card); border: 1px solid var(--border); border-top: none;
+            padding: 20px 24px; margin-bottom: 24px;
+        }
+        .day-header { margin-bottom: 16px; }
+        .day-header h2 { font-size: 18px; font-weight: 700; }
+        .day-header .day-date { font-size: 13px; color: var(--accent); font-weight: 600; }
+        .day-header .day-note { font-size: 12px; color: var(--text-sec); font-style: italic; margin-top: 4px; }
+        .drive-info {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 10px; background: var(--elevated); border: 1px solid var(--border);
+            font-size: 12px; margin-top: 8px;
+        }
+        .drive-info strong { color: var(--accent); }
+
+        /* ── Time budget ── */
+        .time-budget { margin: 16px 0; }
+        .budget-bar-container {
+            height: 28px; background: var(--elevated); border: 1px solid var(--border);
+            position: relative; overflow: hidden;
+        }
+        .budget-fill {
+            height: 100%; transition: width 0.3s, background 0.3s;
+            display: flex; align-items: center; padding-left: 8px;
+            font-size: 11px; font-weight: 700; color: #ffffff; white-space: nowrap;
+        }
+        .budget-fill.ok { background: var(--success); }
+        .budget-fill.tight { background: var(--warning); }
+        .budget-fill.over { background: var(--error); }
+        .budget-drive {
+            height: 100%; background: var(--border); position: absolute; left: 0; top: 0;
+            display: flex; align-items: center; padding-left: 8px;
+            font-size: 10px; color: var(--text-sec); white-space: nowrap;
+        }
+        .budget-text {
+            display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px;
+        }
+        .budget-text .status { font-weight: 700; }
+        .budget-text .status.ok { color: var(--success); }
+        .budget-text .status.tight { color: var(--warning); }
+        .budget-text .status.over { color: var(--error); }
+
+        /* ── Selected POIs ── */
+        .selected-section { margin: 20px 0; }
+        .selected-section h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-sec); margin-bottom: 8px; }
+        .selected-list { list-style: none; }
+        .selected-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; border: 1px solid var(--border); margin-bottom: -1px;
+        }
+        .transit-chip {
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            padding: 2px 0; font-size: 11px; color: var(--text-sec);
+            border-left: 2px dashed var(--border); margin-left: 18px;
+            height: 22px;
+        }
+        .transit-chip span { font-weight: 600; }
+            background: var(--card); transition: background 0.1s;
+        }
+        .selected-item:hover { background: var(--elevated); }
+        .selected-item .poi-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .selected-item .poi-icon { flex-shrink: 0; width: 20px; text-align: center; }
+        .selected-item .poi-name { font-size: 13px; font-weight: 600; }
+        .selected-item .poi-hours { font-size: 12px; color: var(--accent); font-weight: 600; margin-left: 8px; white-space: nowrap; }
+        .remove-btn {
+            background: none; border: 1px solid var(--error); color: var(--error);
+            width: 28px; height: 28px; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-family: inherit; border-radius: 0; flex-shrink: 0;
+        }
+        .remove-btn:hover { background: var(--error); color: #ffffff; }
+        .empty-plan {
+            padding: 20px; text-align: center; color: var(--text-sec);
+            font-size: 13px; border: 1px dashed var(--border);
+        }
+
+        /* ── Available POIs ── */
+        .available-section { margin: 20px 0; }
+        .available-section h3 {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--text-sec); margin-bottom: 12px;
+        }
+        .region-group { margin-bottom: 16px; }
+        .region-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--accent); margin-bottom: 8px;
+            padding-bottom: 4px; border-bottom: 1px solid var(--border);
+        }
+        .poi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .poi-card {
+            padding: 10px 12px; background: var(--card);
+            border: 1px solid var(--border); transition: all 0.15s; cursor: pointer;
+        }
+        .poi-card:hover { border-color: var(--accent); }
+        .poi-card.added { opacity: 0.4; pointer-events: none; border-style: dashed; }
+        .poi-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .poi-card-name { font-size: 13px; font-weight: 600; }
+        .poi-card-hours {
+            font-size: 11px; font-weight: 700; color: var(--accent);
+            background: var(--elevated); padding: 2px 6px; white-space: nowrap;
+            border: 1px solid var(--border); flex-shrink: 0;
+        }
+        .poi-card-desc { font-size: 11px; color: var(--text-sec); margin-top: 4px; line-height: 1.4; }
+        .poi-card-tip { font-size: 11px; color: var(--warning); margin-top: 4px; font-weight: 600; }
+        .poi-card-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+        .poi-card-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        .add-btn {
+            padding: 4px 10px; font-size: 11px; font-weight: 700;
+            background: var(--accent); border: 1px solid var(--accent-hover);
+            color: #ffffff; cursor: pointer; font-family: inherit; border-radius: 0;
+        }
+        .add-btn:hover { background: var(--accent-hover); }
+        .add-btn.would-overflow { background: var(--warning); border-color: var(--warning); }
+        .overflow-warn { font-size: 10px; color: var(--warning); font-weight: 600; }
+
+        /* ── Tags ── */
+        .tag {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 10px; font-weight: 600; padding: 2px 6px;
+            border: 1px solid; white-space: nowrap;
+        }
+        .tag-history { background: #e3f2fd; color: #1c69d4; border-color: #1c69d4; }
+        .tag-view { background: #fff3e0; color: #b27600; border-color: #e89b00; }
+        .tag-hike { background: #e8f5e9; color: #00823b; border-color: #00823b; }
+        .tag-food { background: #fce4ec; color: #c91432; border-color: #c91432; }
+        .tag-beach { background: #e0f7fa; color: #00796b; border-color: #009A97; }
+        .tag-nature { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
+        .tag-village { background: var(--elevated); color: var(--text-sec); border-color: var(--border); }
+        .tag-culture { background: #ede7f6; color: #4527a0; border-color: #7e57c2; }
+        [data-theme="dark"] .tag-history { background: #0d2744; color: #4a8de6; border-color: #4a8de6; }
+        [data-theme="dark"] .tag-view { background: #3a2a00; color: #f0b840; border-color: #f0b840; }
+        [data-theme="dark"] .tag-hike { background: #1b3a1b; color: #2ebd6b; border-color: #2ebd6b; }
+        [data-theme="dark"] .tag-food { background: #3a1a1a; color: #e84060; border-color: #e84060; }
+        [data-theme="dark"] .tag-beach { background: #003333; color: #4db6ac; border-color: #4db6ac; }
+        [data-theme="dark"] .tag-nature { background: #1b3a1b; color: #66bb6a; border-color: #66bb6a; }
+        [data-theme="dark"] .tag-culture { background: #1a1033; color: #b39ddb; border-color: #b39ddb; }
+
+        /* ── Filter bar ── */
+        .filter-bar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+        .filter-btn {
+            padding: 4px 10px; font-size: 11px; font-weight: 600;
+            background: var(--card); border: 1px solid var(--border);
+            color: var(--text-sec); cursor: pointer; font-family: inherit; border-radius: 0;
+        }
+        .filter-btn:hover { border-color: var(--accent); }
+        .filter-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+
+        /* ── Trip summary ── */
+        .trip-summary {
+            background: var(--card); border: 1px solid var(--border); padding: 20px 24px;
+        }
+        .trip-summary h2 {
+            font-size: 16px; font-weight: 700; margin-bottom: 12px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--accent);
+        }
+        .summary-stats { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+        .summary-stat { text-align: center; }
+        .summary-stat-value { font-size: 20px; font-weight: 700; color: var(--accent); }
+        .summary-stat-label { font-size: 10px; color: var(--text-sec); text-transform: uppercase; }
+        .summary-day { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .summary-day:last-child { border-bottom: none; }
+        .summary-day-label { font-weight: 700; color: var(--accent); font-size: 12px; }
+        .summary-day-pois { color: var(--text-sec); margin-top: 2px; }
+        .summary-day-hours { font-size: 11px; font-weight: 600; }
+        .summary-day-hours.ok { color: var(--success); }
+        .summary-day-hours.tight { color: var(--warning); }
+        .summary-day-hours.over { color: var(--error); }
+
+        /* ── Responsive ── */
+        @media (max-width: 700px) {
+            .poi-grid { grid-template-columns: 1fr; }
+            .route-picker { flex-direction: column; }
+            .day-tabs { flex-wrap: nowrap; }
+            .day-tab { min-width: 70px; padding: 8px 4px; }
+            .day-tab .tab-label { display: none; }
+            .summary-stats { gap: 12px; }
+        }
+
+        /* ── Map ── */
+        .map-container {
+            margin-bottom: 24px; border: 1px solid var(--border);
+            background: var(--card); overflow: hidden;
+        }
+        .map-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px; background: var(--elevated); border-bottom: 1px solid var(--border);
+        }
+        .map-header h3 {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--text-sec); margin: 0;
+        }
+        .map-toggle-btn {
+            padding: 4px 10px; font-size: 11px; font-weight: 600;
+            background: var(--card); border: 1px solid var(--border);
+            color: var(--text-sec); cursor: pointer; font-family: inherit; border-radius: 0;
+        }
+        .map-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+        #map { height: 380px; width: 100%; }
+        .leaflet-popup-content-wrapper { border-radius: 0 !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important; }
+        .leaflet-popup-content { margin: 12px 16px !important; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important; line-height: 1.5 !important; }
+        .popup-cat { font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .popup-title { font-size: 14px; font-weight: 700; color: #262626; margin: 2px 0; }
+        .popup-desc { font-size: 12px; color: #555; }
+        .popup-hours { font-size: 11px; color: #1c69d4; font-weight: 600; margin-top: 4px; }
+        [data-theme="dark"] .popup-title { color: #262626; }
+        [data-theme="dark"] .popup-desc { color: #555; }
+
+        .map-legend {
+            display: flex; gap: 10px; flex-wrap: wrap; padding: 8px 16px;
+            border-top: 1px solid var(--border); background: var(--card); font-size: 11px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 4px; color: var(--text-sec); }
+        .legend-dot {
+            width: 10px; height: 10px; border: 1px solid var(--border);
+        }
+
+        /* ── Print ── */
+        @media print {
+            nav { position: static; }
+            .preset-bar, .route-picker, .filter-bar, .add-btn, .remove-btn { display: none !important; }
+            .day-content, .trip-summary { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <h1>🇬🇷 Greece Vacation Planner</h1>
+            <div class="subtitle">Jun 14–21, 2026 · Athens round trip · Rental car</div>
+        </div>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode (Alt+D)">☀️</button>
+    </nav>
+
+    <div class="container">
+        <div class="section-title" style="margin-top:16px">① Choose your route</div>
+        <div class="route-picker" id="routePicker"></div>
+
+        <div class="section-title">② Load a recommended plan or build your own</div>
+        <div class="preset-bar" id="presetBar"></div>
+
+        <div class="map-container" id="mapContainer">
+            <div class="map-header">
+                <h3>📍 Map — Day <span id="mapDayLabel">1</span></h3>
+                <button class="map-toggle-btn" id="mapToggleBtn" aria-label="Collapse map">▲ Hide map</button>
+            </div>
+            <div id="map"></div>
+            <div class="map-legend" id="mapLegend"></div>
+        </div>
+
+        <div class="section-title">③ Click a day, then add or remove POIs</div>
+        <div class="day-tabs" id="dayTabs" role="tablist"></div>
+        <div class="day-content" id="dayContent" role="tabpanel"></div>
+
+        <div class="section-title">④ Your trip at a glance</div>
+        <div class="trip-summary" id="tripSummary"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    /* ═══════════════════════════════════════════
+       DATA
+       ═══════════════════════════════════════════ */
+    const catConfig = {
+        history: { icon: '🏛️', label: 'History' },
+        view:    { icon: '👁️', label: 'Views' },
+        hike:    { icon: '🥾', label: 'Hike' },
+        food:    { icon: '🍽️', label: 'Food' },
+        beach:   { icon: '🏖️', label: 'Beach' },
+        nature:  { icon: '🌿', label: 'Nature' },
+        village: { icon: '🏘️', label: 'Village' },
+        culture: { icon: '🎭', label: 'Culture' }
+    };
+
+    const regionNames = {
+        athens: 'Athens', delphi: 'Delphi', meteora: 'Meteora',
+        ioannina: 'Ioannina', zagori: 'Zagori', olympus: 'Mount Olympus',
+        pelion: 'Pelion', thermopylae: 'Thermopylae'
+    };
+
+    /* Average transit minutes between POIs within each region */
+    const regionTransitMin = {
+        athens: 25, delphi: 9, meteora: 8, ioannina: 8,
+        zagori: 10, olympus: 6, pelion: 8, thermopylae: 2
+    };
+
+    const pois = [
+        // ── ATHENS ──
+        { id:'ath-01', name:'Acropolis & Parthenon', region:'athens', hours:2, cat:['history'], desc:'Iconic hilltop citadel. Book timed tickets in advance.', tip:'Go at 8 AM or after 5 PM to avoid crowds and heat.', lat:37.9715, lng:23.7267 },
+        { id:'ath-02', name:'Acropolis Museum', region:'athens', hours:1.5, cat:['history'], desc:'Parthenon frieze, Caryatids, archaic sculptures. Air-conditioned.', lat:37.9685, lng:23.7285 },
+        { id:'ath-03', name:'Ancient Agora & Temple of Hephaestus', region:'athens', hours:1.5, cat:['history'], desc:'Best-preserved Greek temple. Heart of ancient Athenian democracy.', lat:37.9750, lng:23.7222 },
+        { id:'ath-04', name:'National Archaeological Museum', region:'athens', hours:2, cat:['history'], desc:'World\'s finest Greek antiquities. Mask of Agamemnon, Antikythera mechanism.', lat:37.9891, lng:23.7328 },
+        { id:'ath-05', name:'Philopappos Hill sunset walk', region:'athens', hours:1, cat:['hike','view'], desc:'1.5 km loop with the best Acropolis view at golden hour.', lat:37.9681, lng:23.7210 },
+        { id:'ath-06', name:'Areopagus Rock', region:'athens', hours:0.5, cat:['view'], desc:'Free sunset spot with panoramic Acropolis view. Gets crowded.', lat:37.9722, lng:23.7239 },
+        { id:'ath-07', name:'Lycabettus Hill hike', region:'athens', hours:1.5, cat:['hike','view'], desc:'Highest point in Athens. Hike up (30 min) or funicular. 360° city views.', lat:37.9799, lng:23.7449 },
+        { id:'ath-08', name:'Plaka & Monastiraki stroll', region:'athens', hours:1.5, cat:['food','culture'], desc:'Historic neighborhoods. Souvlaki at Thanasis, flea market, narrow lanes.', lat:37.9747, lng:23.7264 },
+        { id:'ath-09', name:'Temple of Olympian Zeus', region:'athens', hours:0.5, cat:['history'], desc:'Massive columns of the largest temple in ancient Greece. Hadrian\'s Arch nearby.', lat:37.9693, lng:23.7331 },
+        { id:'ath-10', name:'Panathenaic Stadium', region:'athens', hours:0.5, cat:['history'], desc:'Marble stadium from 330 BC. Site of first modern Olympics (1896). Run the track.', lat:37.9683, lng:23.7414 },
+        { id:'ath-11', name:'Syntagma Square & guards', region:'athens', hours:0.5, cat:['culture'], desc:'Changing of the Evzones guard. Sunday 11 AM is the most elaborate ceremony.', lat:37.9755, lng:23.7348 },
+        { id:'ath-12', name:'Psyrri dinner & nightlife', region:'athens', hours:2, cat:['food'], desc:'Buzzing restaurant and bar district. From traditional tavernas to rooftop cocktails.', lat:37.9782, lng:23.7245 },
+        { id:'ath-13', name:'Central Market (Varvakeios)', region:'athens', hours:0.5, cat:['food','culture'], desc:'Chaotic fish and meat market. Authentic Athens. Go before noon.', lat:37.9810, lng:23.7280 },
+        { id:'ath-14', name:'Anafiotika neighborhood', region:'athens', hours:0.5, cat:['view','culture'], desc:'Tiny Cycladic-style village hidden on the slopes below the Acropolis.', lat:37.9725, lng:23.7290 },
+        { id:'ath-15', name:'Kerameikos ancient cemetery', region:'athens', hours:1, cat:['history'], desc:'Ancient cemetery and museum. Less visited, atmospheric. Near Monastiraki.', lat:37.9783, lng:23.7180 },
+        // ── DELPHI ──
+        { id:'del-01', name:'Archaeological Site (Temple of Apollo)', region:'delphi', hours:2, cat:['history'], desc:'Temple of Apollo, Treasury of Athens, theater. UNESCO. Clinging to Mount Parnassus.', lat:38.4824, lng:22.5010 },
+        { id:'del-02', name:'Tholos of Athena Pronaia', region:'delphi', hours:0.5, cat:['history','view'], desc:'Iconic circular temple. 10 min walk from main site. Most photographed ruin in Greece.', lat:38.4797, lng:22.5048 },
+        { id:'del-03', name:'Delphi Museum', region:'delphi', hours:1.5, cat:['history'], desc:'Charioteer bronze, Sphinx of Naxos, Temple friezes. Air-conditioned.', lat:38.4818, lng:22.4988 },
+        { id:'del-04', name:'Ancient Theater sunset', region:'delphi', hours:0.5, cat:['view'], desc:'Sunset over the olive valley from the theater seats. Unforgettable light.', lat:38.4834, lng:22.5010 },
+        { id:'del-05', name:'Arachova village', region:'delphi', hours:1, cat:['village','food'], desc:'Charming mountain village. Boutique shops, local cheese, wine. 10 min from Delphi.', lat:38.4796, lng:22.5885 },
+        { id:'del-06', name:'Mount Parnassus E4 trail', region:'delphi', hours:3, cat:['hike'], desc:'Section of the E4 European long-distance trail. Alpine meadows, panoramic views at 1,800 m.', lat:38.5350, lng:22.6210 },
+        { id:'del-07', name:'Corycian Cave hike', region:'delphi', hours:4, cat:['hike'], desc:'Ancient cave sacred to Pan and the Nymphs. 7 km trail through forest. Bring a flashlight.', lat:38.5120, lng:22.5680 },
+        // ── METEORA ──
+        { id:'met-01', name:'Great Meteoron Monastery', region:'meteora', hours:1.5, cat:['history'], desc:'The largest and oldest (14th c.). Museum, frescoes, ossuary. Covered shoulders/knees required.', lat:39.7270, lng:21.6260 },
+        { id:'met-02', name:'Varlaam Monastery', region:'meteora', hours:1, cat:['history','view'], desc:'Rooftop panorama, stunning frescoes. Second most visited.', lat:39.7252, lng:21.6280 },
+        { id:'met-03', name:'Holy Trinity Monastery', region:'meteora', hours:1, cat:['history','view'], desc:'Most dramatic setting. Featured in James Bond. 140 steps carved in rock.', lat:39.7175, lng:21.6350 },
+        { id:'met-04', name:'Roussanou Monastery', region:'meteora', hours:0.5, cat:['history'], desc:'Perched on a narrow pillar. Intimate and beautiful. Run by nuns.', lat:39.7200, lng:21.6300 },
+        { id:'met-05', name:'Psaropetra sunset viewpoint', region:'meteora', hours:0.5, cat:['view'], desc:'All six monasteries visible. The iconic Meteora panorama at golden hour.', lat:39.7217, lng:21.6306 },
+        { id:'met-06', name:'Meteora forest trails', region:'meteora', hours:2, cat:['hike'], desc:'3-6 km loops through forest between rock pillars. Best after monastery closing time.', lat:39.7230, lng:21.6230 },
+        { id:'met-07', name:'Kalambaka town dinner', region:'meteora', hours:1, cat:['food'], desc:'Main town at the base. Good tavernas with rock pillar views.', lat:39.7040, lng:21.6276 },
+        { id:'met-08', name:'Adrachti rock viewpoint hike', region:'meteora', hours:1, cat:['hike','view'], desc:'Short scramble to a dramatic pinnacle viewpoint. Less touristy.', lat:39.7190, lng:21.6240 },
+        // ── IOANNINA ──
+        { id:'ioa-01', name:'Its Kale Fortress', region:'ioannina', hours:1, cat:['history','view'], desc:'Byzantine citadel on the lake. Two mosques, city walls, panoramic lake views.', lat:39.6710, lng:20.8530 },
+        { id:'ioa-02', name:'Ali Pasha Museum & Lake Island', region:'ioannina', hours:1.5, cat:['history'], desc:'Boat to the lake island. Ottoman history. The room where Ali Pasha was killed.', lat:39.6665, lng:20.8480 },
+        { id:'ioa-03', name:'Old Bazaar area dinner', region:'ioannina', hours:1, cat:['food'], desc:'Souvlaki, grilled meats, pies. Try bougatsa for dessert.', lat:39.6680, lng:20.8525 },
+        { id:'ioa-04', name:'Byzantine Museum', region:'ioannina', hours:1, cat:['history'], desc:'Silverwork, manuscripts, icons. Inside the fortress. Small but quality.', lat:39.6705, lng:20.8537 },
+        { id:'ioa-05', name:'Lake Pamvotis promenade', region:'ioannina', hours:0.5, cat:['view'], desc:'Lakeside walk with mountain backdrop. Best in late afternoon light.', lat:39.6650, lng:20.8510 },
+        { id:'ioa-06', name:'Perama Cave', region:'ioannina', hours:1, cat:['nature'], desc:'One of Europe\'s largest caves. Stalactites, underground river. 4 km from city.', lat:39.6800, lng:20.8440 },
+        // ── ZAGORI ──
+        { id:'zag-01', name:'Oxya glass viewpoint', region:'zagori', hours:0.5, cat:['view'], desc:'Glass platform with 900 m sheer drop into Vikos Gorge. Vertigo guaranteed.', lat:39.9260, lng:20.7640 },
+        { id:'zag-02', name:'Beloi viewpoint hike', region:'zagori', hours:1.5, cat:['hike','view'], desc:'30 min hike from Vradeto. Gorge panorama from above. One of the best viewpoints in Greece.', lat:39.9140, lng:20.7680 },
+        { id:'zag-03', name:'Vikos Gorge full hike', region:'zagori', hours:6, cat:['hike'], desc:'Monodendri to Vikos village. 12 km through one of the world\'s deepest gorges.', tip:'⚠ Full day commitment. Start 7 AM. Bring 2L water, food, sturdy shoes.', lat:39.9100, lng:20.7530 },
+        { id:'zag-04', name:'Plakidas Bridge (Kalogeriko)', region:'zagori', hours:0.5, cat:['history','view'], desc:'Triple-arched 18th c. stone bridge. Most famous of Zagori\'s 60+ bridges.', lat:39.8970, lng:20.7560 },
+        { id:'zag-05', name:'Monodendri village stroll', region:'zagori', hours:1, cat:['village'], desc:'Stone houses, narrow paths. Agia Paraskevi monastery on the gorge edge.', lat:39.8900, lng:20.7520 },
+        { id:'zag-06', name:'Papingo pools & village', region:'zagori', hours:2, cat:['nature','village'], desc:'Twin stone villages. Natural rock pools with turquoise water. Swim spot.', lat:39.9440, lng:20.7370 },
+        { id:'zag-07', name:'Drakolimni (Dragon Lake) hike', region:'zagori', hours:6, cat:['hike'], desc:'Glacial lake at 2,050 m. 12 km from Mikro Papingo. Wild horses, zero tourists.', tip:'⚠ Full day. Cold at altitude even in June. Sturdy shoes essential.', lat:39.9800, lng:20.7900 },
+        { id:'zag-08', name:'Vradeto Steps', region:'zagori', hours:1, cat:['hike','history'], desc:'Oldest stone staircase path in Greece (18th c.). 1,100 steps.', lat:39.9100, lng:20.7700 },
+        { id:'zag-09', name:'Kipoi stone bridges walk', region:'zagori', hours:1, cat:['history','view'], desc:'Three bridges near Kipoi village. Easy streamside walk.', lat:39.8860, lng:20.7720 },
+        { id:'zag-10', name:'Zagori village taverna dinner', region:'zagori', hours:1.5, cat:['food'], desc:'Home-cooked mountain food. Pies, grilled meats, tsipouro.', lat:39.9000, lng:20.7550 },
+        // ── PELION ──
+        { id:'pel-01', name:'Tsagarada & ancient plane tree', region:'pelion', hours:1, cat:['village'], desc:'Mountain village with 1,000-year-old plane tree. Shops, cafes.', lat:39.3850, lng:23.1150 },
+        { id:'pel-02', name:'Mylopotamos Beach kalderimi', region:'pelion', hours:2, cat:['hike','beach'], desc:'2.5 km stone path down through forest to white-pebble beach with rock arch.', lat:39.3960, lng:23.1580 },
+        { id:'pel-03', name:'Makrinitsa village', region:'pelion', hours:1, cat:['village','view'], desc:'The "balcony of Pelion". Stone mansions, panoramic views over Volos Gulf.', lat:39.3920, lng:22.9980 },
+        { id:'pel-04', name:'Volos tsipouradika', region:'pelion', hours:1.5, cat:['food'], desc:'Port city. Tsipouradika serve meze plates with tsipouro. Unique local tradition.', lat:39.3622, lng:22.9429 },
+        { id:'pel-05', name:'Damouchari beach', region:'pelion', hours:1, cat:['beach'], desc:'Tiny harbor, Mamma Mia filming location. Crystal clear water, small taverna.', lat:39.4080, lng:23.1610 },
+        { id:'pel-06', name:'Pelion forest kalderimi trail', region:'pelion', hours:2.5, cat:['hike'], desc:'Ancient stone paths through chestnut and beech forest. Green and lush in June.', lat:39.3750, lng:23.0800 },
+        // ── THERMOPYLAE ──
+        { id:'thr-01', name:'Leonidas monument', region:'thermopylae', hours:0.5, cat:['history'], desc:'Memorial to the 300 Spartans. Right off the highway. Quick stop.', lat:38.7964, lng:22.5353 },
+        { id:'thr-02', name:'Thermopylae hot springs', region:'thermopylae', hours:0.5, cat:['nature'], desc:'Free natural hot springs at the base of the cliffs. Bring a towel.', lat:38.7930, lng:22.5400 },
+        // ── OLYMPUS ──
+        { id:'oly-01', name:'Enipeas Gorge trail', region:'olympus', hours:3.5, cat:['hike'], desc:'8 km river canyon with waterfalls and wooden bridges. Shaded, river-cooled.', lat:40.0900, lng:22.4900 },
+        { id:'oly-02', name:'Prionia to Refuge A hike', region:'olympus', hours:6, cat:['hike'], desc:'6 km ascent to 2,100 m. Alpine forest, streams, above treeline.', tip:'⚠ Full day. Start early. Bring 2L water, layers, food.', lat:40.0859, lng:22.3500 },
+        { id:'oly-03', name:'Monastery of Agios Dionysios', region:'olympus', hours:0.5, cat:['history'], desc:'16th century monastery perched on the Enipeas Gorge edge.', lat:40.0850, lng:22.4700 },
+        { id:'oly-04', name:'Litochoro town square', region:'olympus', hours:1, cat:['food'], desc:'Lively plateia with tavernas at the foot of Olympus. Try lamb kleftiko.', lat:40.1034, lng:22.5020 }
+    ];
+
+    const poiMap = {};
+    pois.forEach(p => poiMap[p.id] = p);
+
+    /* ── Route variants ── */
+    const routeVariants = {
+        northern: {
+            name: 'Northern Loop',
+            desc: 'Athens → Delphi → Meteora → Ioannina → Zagori → Athens',
+            totalKm: 1000,
+            days: [
+                { day:0, date:'Sat, Jun 14', label:'Arrive Athens',              regions:['athens'], driveHours:0, totalHours:3, drive:null, note:'Night arrival. Dinner and sleep.' },
+                { day:1, date:'Sun, Jun 15', label:'Athens',                     regions:['athens'], driveHours:0, totalHours:12, drive:null },
+                { day:2, date:'Mon, Jun 16', label:'Athens → Delphi',            regions:['athens','delphi'], driveHours:2.5, totalHours:12, drive:'180 km · ~2.5h' },
+                { day:3, date:'Tue, Jun 17', label:'Delphi → Meteora',           regions:['delphi','meteora'], driveHours:3, totalHours:12, drive:'230 km · ~3h' },
+                { day:4, date:'Wed, Jun 18', label:'Meteora → Ioannina → Zagori',regions:['meteora','ioannina','zagori'], driveHours:2.75, totalHours:12, drive:'210 km · ~2h 45min' },
+                { day:5, date:'Thu, Jun 19', label:'Zagori',                     regions:['zagori'], driveHours:0.5, totalHours:12, drive:null, note:'Short drives between villages.' },
+                { day:6, date:'Fri, Jun 20', label:'Zagori → Athens',            regions:['zagori','thermopylae','athens'], driveHours:5, totalHours:12, drive:'430 km · ~5h (highway)' },
+                { day:7, date:'Sat, Jun 21', label:'Athens → ✈️',               regions:['athens'], driveHours:0.75, totalHours:5, drive:null, note:'Morning free. Afternoon flight.' }
+            ]
+        },
+        pelion: {
+            name: 'Northern + Pelion',
+            desc: 'Athens → Delphi → Meteora → Ioannina → Zagori → Pelion → Athens',
+            totalKm: 1200,
+            days: [
+                { day:0, date:'Sat, Jun 14', label:'Arrive Athens',              regions:['athens'], driveHours:0, totalHours:3, drive:null, note:'Night arrival. Dinner and sleep.' },
+                { day:1, date:'Sun, Jun 15', label:'Athens',                     regions:['athens'], driveHours:0, totalHours:12, drive:null },
+                { day:2, date:'Mon, Jun 16', label:'Athens → Delphi',            regions:['athens','delphi'], driveHours:2.5, totalHours:12, drive:'180 km · ~2.5h' },
+                { day:3, date:'Tue, Jun 17', label:'Delphi → Meteora',           regions:['delphi','meteora'], driveHours:3, totalHours:12, drive:'230 km · ~3h' },
+                { day:4, date:'Wed, Jun 18', label:'Meteora → Ioannina → Zagori',regions:['meteora','ioannina','zagori'], driveHours:2.75, totalHours:12, drive:'210 km · ~2h 45min' },
+                { day:5, date:'Thu, Jun 19', label:'Zagori → Pelion',            regions:['zagori','pelion'], driveHours:3.5, totalHours:12, drive:'280 km · ~3.5h' },
+                { day:6, date:'Fri, Jun 20', label:'Pelion → Athens',            regions:['pelion','thermopylae','athens'], driveHours:3.5, totalHours:12, drive:'320 km · ~3.5h' },
+                { day:7, date:'Sat, Jun 21', label:'Athens → ✈️',               regions:['athens'], driveHours:0.75, totalHours:5, drive:null, note:'Morning free. Afternoon flight.' }
+            ]
+        },
+        olympus: {
+            name: 'Northern + Olympus',
+            desc: 'Athens → Delphi → Meteora → Zagori → Olympus → Athens',
+            totalKm: 1150,
+            days: [
+                { day:0, date:'Sat, Jun 14', label:'Arrive Athens',              regions:['athens'], driveHours:0, totalHours:3, drive:null, note:'Night arrival. Dinner and sleep.' },
+                { day:1, date:'Sun, Jun 15', label:'Athens',                     regions:['athens'], driveHours:0, totalHours:12, drive:null },
+                { day:2, date:'Mon, Jun 16', label:'Athens → Delphi',            regions:['athens','delphi'], driveHours:2.5, totalHours:12, drive:'180 km · ~2.5h' },
+                { day:3, date:'Tue, Jun 17', label:'Delphi → Meteora',           regions:['delphi','meteora'], driveHours:3, totalHours:12, drive:'230 km · ~3h' },
+                { day:4, date:'Wed, Jun 18', label:'Meteora → Zagori',           regions:['meteora','ioannina','zagori'], driveHours:2.75, totalHours:12, drive:'210 km · ~2h 45min' },
+                { day:5, date:'Thu, Jun 19', label:'Zagori → Olympus',           regions:['zagori','olympus'], driveHours:3.5, totalHours:12, drive:'300 km · ~3.5h' },
+                { day:6, date:'Fri, Jun 20', label:'Olympus → Athens',           regions:['olympus','thermopylae','athens'], driveHours:4.5, totalHours:12, drive:'410 km · ~4.5h' },
+                { day:7, date:'Sat, Jun 21', label:'Athens → ✈️',               regions:['athens'], driveHours:0.75, totalHours:5, drive:null, note:'Morning free. Afternoon flight.' }
+            ]
+        }
+    };
+
+    /* ── Presets ── */
+    const presets = {
+        'views-history': {
+            name: '👁️🏛️ Views & History',
+            variant: 'northern',
+            desc: 'Best monuments, panoramic viewpoints, cultural highlights',
+            days: {
+                0: ['ath-12'],
+                1: ['ath-01','ath-02','ath-03','ath-08','ath-05'],
+                2: ['del-01','del-02','del-04','del-05'],
+                3: ['del-03','met-01','met-02','met-05'],
+                4: ['met-03','ioa-01','ioa-02','zag-10'],
+                5: ['zag-01','zag-02','zag-04','zag-06','zag-05'],
+                6: ['thr-01','ath-07'],
+                7: ['ath-04']
+            }
+        },
+        'with-hiking': {
+            name: '🥾 With Hiking',
+            variant: 'northern',
+            desc: 'History highlights plus serious hiking options',
+            days: {
+                0: ['ath-12'],
+                1: ['ath-01','ath-02','ath-07','ath-08'],
+                2: ['del-01','del-02','del-06'],
+                3: ['del-03','met-01','met-06','met-05'],
+                4: ['met-04','ioa-01','ioa-02','zag-10'],
+                5: ['zag-03'],
+                6: ['thr-01','ath-06'],
+                7: ['ath-05']
+            }
+        },
+        'balanced': {
+            name: '⚖️ Balanced Mix',
+            variant: 'northern',
+            desc: 'History, views, food, light hiking, relaxation',
+            days: {
+                0: ['ath-12'],
+                1: ['ath-01','ath-02','ath-03','ath-08','ath-06'],
+                2: ['del-01','del-02','del-05'],
+                3: ['del-03','met-01','met-02','met-07'],
+                4: ['met-06','ioa-01','ioa-03'],
+                5: ['zag-01','zag-02','zag-04','zag-06'],
+                6: ['thr-01','thr-02'],
+                7: ['ath-13','ath-10']
+            }
+        }
+    };
+
+    /* ═══════════════════════════════════════════
+       STATE
+       ═══════════════════════════════════════════ */
+    let currentVariant = 'northern';
+    let activeDay = 1;
+    let selectedPois = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[], 7:[] };
+    let activePreset = null;
+    let activeFilter = 'all';
+
+    /* ═══════════════════════════════════════════
+       HELPERS
+       ═══════════════════════════════════════════ */
+    function getDayConfig(dayNum) {
+        return routeVariants[currentVariant].days[dayNum];
+    }
+    function getAvailableHours(dayNum) {
+        const dc = getDayConfig(dayNum);
+        return dc.totalHours - dc.driveHours;
+    }
+    function getUsedHours(dayNum) {
+        return selectedPois[dayNum].reduce((sum, id) => sum + (poiMap[id]?.hours || 0), 0);
+    }
+    function getActivityHours(dayNum) {
+        return getUsedHours(dayNum);
+    }
+    function getTransitHours(dayNum) {
+        const ids = selectedPois[dayNum];
+        if (ids.length < 2) return 0;
+        /* Group selected POIs by region, sum (n-1) gaps per region */
+        const regionCounts = {};
+        ids.forEach(id => {
+            const r = poiMap[id]?.region;
+            if (r) regionCounts[r] = (regionCounts[r] || 0) + 1;
+        });
+        let totalMin = 0;
+        for (const [r, count] of Object.entries(regionCounts)) {
+            if (count > 1) totalMin += (count - 1) * (regionTransitMin[r] || 10);
+        }
+        return totalMin / 60;
+    }
+    function getTotalUsedHours(dayNum) {
+        return getUsedHours(dayNum) + getTransitHours(dayNum);
+    }
+    function getFreeHours(dayNum) {
+        return getAvailableHours(dayNum) - getTotalUsedHours(dayNum);
+    }
+    function getStatus(dayNum) {
+        const free = getFreeHours(dayNum);
+        if (free < 0) return 'over';
+        if (free < 1.5) return 'tight';
+        return 'ok';
+    }
+    function statusIcon(s) {
+        if (s === 'ok') return '✓';
+        if (s === 'tight') return '⚠';
+        return '✕';
+    }
+    function fmtH(h) { return h % 1 === 0 ? h + 'h' : h.toFixed(1) + 'h'; }
+
+    function isPoiSelectedAnywhere(poiId) {
+        for (let d = 0; d < 8; d++) {
+            if (selectedPois[d].includes(poiId)) return true;
+        }
+        return false;
+    }
+
+    function tagsHTML(cats) {
+        return cats.map(c => {
+            const cfg = catConfig[c];
+            return `<span class="tag tag-${c}">${cfg.icon} ${cfg.label}</span>`;
+        }).join('');
+    }
+
+    /* ═══════════════════════════════════════════
+       RENDER
+       ═══════════════════════════════════════════ */
+    function renderRoutePicker() {
+        const el = document.getElementById('routePicker');
+        el.innerHTML = Object.entries(routeVariants).map(([key, rv]) => `
+            <div class="route-card ${currentVariant === key ? 'active' : ''}" data-variant="${key}" role="radio" aria-checked="${currentVariant === key}" tabindex="0">
+                <div class="route-card-name">
+                    <input type="radio" name="route" value="${key}" ${currentVariant === key ? 'checked' : ''} tabindex="-1">
+                    ${rv.name}
+                </div>
+                <div class="route-card-desc">${rv.desc}</div>
+                <div class="route-card-km">~${rv.totalKm.toLocaleString()} km total driving</div>
+            </div>
+        `).join('');
+        el.querySelectorAll('.route-card').forEach(card => {
+            card.addEventListener('click', () => switchVariant(card.dataset.variant));
+            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchVariant(card.dataset.variant); }});
+        });
+    }
+
+    function renderPresetBar() {
+        const el = document.getElementById('presetBar');
+        el.innerHTML = Object.entries(presets).map(([key, p]) => `
+            <button class="preset-btn ${activePreset === key ? 'active' : ''}" data-preset="${key}" title="${p.desc}">${p.name}</button>
+        `).join('') + `<button class="preset-btn clear" id="clearBtn" title="Remove all selections">✕ Clear all</button>`;
+        el.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+            btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+        });
+        document.getElementById('clearBtn').addEventListener('click', clearAll);
+    }
+
+    function renderDayTabs() {
+        const el = document.getElementById('dayTabs');
+        const days = routeVariants[currentVariant].days;
+        el.innerHTML = days.map(d => {
+            const used = getTotalUsedHours(d.day);
+            const avail = getAvailableHours(d.day);
+            const status = used > 0 ? getStatus(d.day) : '';
+            const statusText = used > 0 ? `${statusIcon(status)} ${fmtH(used)}/${fmtH(avail)}` : 'empty';
+            return `<button class="day-tab ${activeDay === d.day ? 'active' : ''}" data-day="${d.day}" role="tab" aria-selected="${activeDay === d.day}">
+                <span class="tab-day">Day ${d.day}</span>
+                <span class="tab-label">${d.label.split('→').pop().trim().replace('✈️','✈')}</span>
+                <span class="tab-status ${status ? 'tab-' + status : ''}">${statusText}</span>
+            </button>`;
+        }).join('');
+        el.querySelectorAll('.day-tab').forEach(tab => {
+            tab.addEventListener('click', () => { activeDay = parseInt(tab.dataset.day); renderDayContent(); renderDayTabs(); renderSummary(); });
+        });
+    }
+
+    function renderDayContent() {
+        const el = document.getElementById('dayContent');
+        const dc = getDayConfig(activeDay);
+        const avail = getAvailableHours(activeDay);
+        const activity = getActivityHours(activeDay);
+        const transit = getTransitHours(activeDay);
+        const used = getTotalUsedHours(activeDay);
+        const free = avail - used;
+        const pct = Math.min((used / avail) * 100, 100);
+        const status = getStatus(activeDay);
+
+        let driveHTML = '';
+        if (dc.drive) {
+            driveHTML = `<div class="drive-info">🚗 ${dc.drive}</div>`;
+        }
+        let noteHTML = '';
+        if (dc.note) {
+            noteHTML = `<div class="day-note">${dc.note}</div>`;
+        }
+
+        // Time budget
+        const budgetClass = status;
+        const budgetLabel = free >= 0
+            ? `${statusIcon(status)} ${fmtH(free)} free time remaining`
+            : `${statusIcon(status)} ${fmtH(Math.abs(free))} over budget — cut something`;
+        const drivePct = (dc.driveHours / dc.totalHours) * 100;
+
+        // Selected POIs
+        const selIds = selectedPois[activeDay];
+        let selectedHTML;
+        if (selIds.length === 0) {
+            selectedHTML = '<div class="empty-plan">No POIs selected yet. Browse below and click <strong>+ Add</strong> to build your day.</div>';
+        } else {
+            selectedHTML = '<ul class="selected-list">' + selIds.map((id, idx) => {
+                const p = poiMap[id];
+                const mainCat = p.cat[0];
+                let chipHTML = '';
+                if (idx < selIds.length - 1) {
+                    const nextP = poiMap[selIds[idx + 1]];
+                    const transitR = (p.region === nextP.region) ? p.region : p.region;
+                    const mins = regionTransitMin[transitR] || 10;
+                    chipHTML = `<li class="transit-chip" aria-label="${mins} minute transit">🚶 <span>${mins}min</span></li>`;
+                }
+                return `<li class="selected-item">
+                    <div class="poi-info">
+                        <span class="poi-icon">${catConfig[mainCat].icon}</span>
+                        <span class="poi-name">${p.name}</span>
+                        <span class="poi-hours">${fmtH(p.hours)}</span>
+                    </div>
+                    <button class="remove-btn" data-id="${id}" aria-label="Remove ${p.name}" title="Remove">✕</button>
+                </li>${chipHTML}`;
+            }).join('') + '</ul>';
+        }
+
+        // Available POIs grouped by region
+        const dayRegions = dc.regions;
+        const availablePois = pois.filter(p => {
+            if (!dayRegions.includes(p.region)) return false;
+            if (selIds.includes(p.id)) return false;
+            if (activeFilter !== 'all' && !p.cat.includes(activeFilter)) return false;
+            return true;
+        });
+
+        const grouped = {};
+        availablePois.forEach(p => {
+            if (!grouped[p.region]) grouped[p.region] = [];
+            grouped[p.region].push(p);
+        });
+
+        // Filter bar
+        const allCats = new Set();
+        pois.filter(p => dayRegions.includes(p.region)).forEach(p => p.cat.forEach(c => allCats.add(c)));
+        const filterHTML = `<div class="filter-bar">
+            <span style="font-size:11px;color:var(--text-sec);font-weight:600;">Filter:</span>
+            <button class="filter-btn ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+            ${[...allCats].sort().map(c => `<button class="filter-btn ${activeFilter === c ? 'active' : ''}" data-filter="${c}">${catConfig[c].icon} ${catConfig[c].label}</button>`).join('')}
+        </div>`;
+
+        let availHTML = '';
+        for (const region of dayRegions) {
+            const rPois = grouped[region];
+            if (!rPois || rPois.length === 0) continue;
+            const alreadySelected = pois.filter(p => p.region === region && selIds.includes(p.id));
+            const allInRegion = pois.filter(p => p.region === region && dayRegions.includes(p.region));
+            const countSel = alreadySelected.length;
+            const countTotal = allInRegion.length;
+            availHTML += `<div class="region-group">
+                <div class="region-label">${regionNames[region]} (${countSel}/${countTotal} selected)</div>
+                <div class="poi-grid">${rPois.map(p => {
+                    const extraTransit = countSel > 0 ? (regionTransitMin[p.region] || 10) / 60 : 0;
+                    const wouldOverflow = free - p.hours - extraTransit < 0;
+                    const alreadyAdded = isPoiSelectedAnywhere(p.id);
+                    return `<div class="poi-card ${alreadyAdded ? 'added' : ''}">
+                        <div class="poi-card-header">
+                            <span class="poi-card-name">${p.name}</span>
+                            <span class="poi-card-hours">${fmtH(p.hours)}</span>
+                        </div>
+                        <div class="poi-card-desc">${p.desc}</div>
+                        ${p.tip ? `<div class="poi-card-tip">${p.tip}</div>` : ''}
+                        <div class="poi-card-bottom">
+                            <div class="poi-card-tags">${tagsHTML(p.cat)}</div>
+                            ${alreadyAdded
+                                ? '<span style="font-size:10px;color:var(--text-sec)">✓ Already in plan</span>'
+                                : `<button class="add-btn ${wouldOverflow ? 'would-overflow' : ''}" data-id="${p.id}">+ Add${wouldOverflow ? ' ⚠' : ''}</button>`
+                            }
+                        </div>
+                        ${wouldOverflow && !alreadyAdded ? `<div class="overflow-warn">⚠ Adding this exceeds your time budget by ${fmtH(Math.abs(free - p.hours - extraTransit))}</div>` : ''}
+                    </div>`;
+                }).join('')}</div>
+            </div>`;
+        }
+        if (availHTML === '') {
+            availHTML = '<div style="color:var(--text-sec);font-size:13px;padding:12px 0;">All POIs in reachable regions are already selected or filtered out.</div>';
+        }
+
+        el.innerHTML = `
+            <div class="day-header">
+                <div class="day-date">Day ${dc.day} · ${dc.date}</div>
+                <h2>${dc.label}</h2>
+                ${noteHTML}
+                ${driveHTML}
+            </div>
+            <div class="time-budget">
+                <div style="font-size:12px;color:var(--text-sec);margin-bottom:4px;">
+                    Total day: ${fmtH(dc.totalHours)} · Driving: ${fmtH(dc.driveHours)} · Available for activities: <strong>${fmtH(avail)}</strong>
+                </div>
+                <div class="budget-bar-container" role="progressbar" aria-valuenow="${used}" aria-valuemin="0" aria-valuemax="${avail}" aria-label="Time used ${fmtH(used)} of ${fmtH(avail)}">
+                    <div class="budget-fill ${budgetClass}" style="width:${Math.min(pct, 100)}%">
+                        ${pct > 15 ? fmtH(used) + ' used' : ''}
+                    </div>
+                </div>
+                <div class="budget-text">
+                    <span>Activities: ${fmtH(activity)}${transit > 0 ? ` · Transit: ${fmtH(transit)}` : ''} · Total: ${fmtH(used)}</span>
+                    <span class="status ${budgetClass}">${budgetLabel}</span>
+                </div>
+            </div>
+            <div class="selected-section">
+                <h3>Your plan for Day ${activeDay} (${selIds.length} POIs · ${fmtH(activity)}${transit > 0 ? ` + ${fmtH(transit)} transit` : ''})</h3>
+                ${selectedHTML}
+            </div>
+            <div class="available-section">
+                <h3>Available POIs in reachable regions</h3>
+                ${filterHTML}
+                ${availHTML}
+            </div>
+        `;
+
+        // Event listeners
+        el.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', () => removePoi(btn.dataset.id));
+        });
+        el.querySelectorAll('.add-btn').forEach(btn => {
+            btn.addEventListener('click', () => addPoi(btn.dataset.id));
+        });
+        el.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => { activeFilter = btn.dataset.filter; renderDayContent(); });
+        });
+    }
+
+    function renderSummary() {
+        const el = document.getElementById('tripSummary');
+        const variant = routeVariants[currentVariant];
+        let totalPois = 0, totalPoiHours = 0, totalTransitHours = 0;
+        const catCounts = {};
+        for (let d = 0; d < 8; d++) {
+            selectedPois[d].forEach(id => {
+                totalPois++;
+                const p = poiMap[id];
+                totalPoiHours += p.hours;
+                p.cat.forEach(c => { catCounts[c] = (catCounts[c] || 0) + 1; });
+            });
+            totalTransitHours += getTransitHours(d);
+        }
+        const daysOver = [];
+        for (let d = 0; d < 8; d++) {
+            if (getStatus(d) === 'over') daysOver.push(d);
+        }
+
+        let warningHTML = '';
+        if (daysOver.length > 0) {
+            warningHTML = `<div style="background:var(--elevated);border:1px solid var(--error);padding:10px 12px;margin-bottom:16px;font-size:13px;">
+                <strong style="color:var(--error);">✕ Over budget on ${daysOver.length} day(s):</strong>
+                ${daysOver.map(d => `Day ${d} (${fmtH(Math.abs(getFreeHours(d)))} over)`).join(', ')}.
+                Consider removing a POI from those days.
+            </div>`;
+        }
+
+        const catSummary = Object.entries(catCounts).sort((a,b) => b[1] - a[1])
+            .map(([c, n]) => `${catConfig[c].icon} ${n}`).join(' · ');
+
+        let daysHTML = '';
+        for (let d = 0; d < 8; d++) {
+            const dc = getDayConfig(d);
+            const ids = selectedPois[d];
+            const dayActivity = getActivityHours(d);
+            const dayTransit = getTransitHours(d);
+            const used = getTotalUsedHours(d);
+            const avail = getAvailableHours(d);
+            const status = ids.length > 0 ? getStatus(d) : '';
+            const poisText = ids.length > 0
+                ? ids.map(id => poiMap[id].name).join(', ')
+                : '<em>nothing planned</em>';
+            const hoursDetail = dayTransit > 0 ? `${fmtH(dayActivity)}+${fmtH(dayTransit)}🚶` : fmtH(used);
+            daysHTML += `<div class="summary-day">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span class="summary-day-label">Day ${d} · ${dc.date} · ${dc.label}</span>
+                    ${ids.length > 0 ? `<span class="summary-day-hours ${status}">${statusIcon(status)} ${hoursDetail}/${fmtH(avail)}</span>` : ''}
+                </div>
+                <div class="summary-day-pois">${poisText}</div>
+            </div>`;
+        }
+
+        el.innerHTML = `
+            <h2>Trip Summary</h2>
+            ${warningHTML}
+            <div class="summary-stats">
+                <div class="summary-stat"><div class="summary-stat-value">${totalPois}</div><div class="summary-stat-label">POIs</div></div>
+                <div class="summary-stat"><div class="summary-stat-value">${fmtH(totalPoiHours)}</div><div class="summary-stat-label">Activity time</div></div>
+                <div class="summary-stat"><div class="summary-stat-value">${fmtH(totalTransitHours)}</div><div class="summary-stat-label">Transit time</div></div>
+                <div class="summary-stat"><div class="summary-stat-value">~${variant.totalKm.toLocaleString()}</div><div class="summary-stat-label">Drive km</div></div>
+                <div class="summary-stat"><div class="summary-stat-value">8</div><div class="summary-stat-label">Days</div></div>
+            </div>
+            <div style="font-size:12px;color:var(--text-sec);margin-bottom:12px;">${catSummary}</div>
+            ${daysHTML}
+        `;
+    }
+
+    function renderAll() {
+        renderRoutePicker();
+        renderPresetBar();
+        renderDayTabs();
+        renderDayContent();
+        renderSummary();
+        if (typeof map !== 'undefined' && map) renderMap();
+    }
+
+    /* ═══════════════════════════════════════════
+       ACTIONS
+       ═══════════════════════════════════════════ */
+    function switchVariant(variant) {
+        if (variant === currentVariant) return;
+        currentVariant = variant;
+        // Clear selections that are no longer reachable
+        for (let d = 0; d < 8; d++) {
+            const dc = getDayConfig(d);
+            selectedPois[d] = selectedPois[d].filter(id => dc.regions.includes(poiMap[id].region));
+        }
+        activePreset = null;
+        renderAll();
+    }
+
+    function loadPreset(presetKey) {
+        const p = presets[presetKey];
+        if (p.variant !== currentVariant) {
+            currentVariant = p.variant;
+        }
+        for (let d = 0; d < 8; d++) {
+            selectedPois[d] = [...(p.days[d] || [])];
+        }
+        activePreset = presetKey;
+        renderAll();
+    }
+
+    function clearAll() {
+        for (let d = 0; d < 8; d++) selectedPois[d] = [];
+        activePreset = null;
+        renderAll();
+    }
+
+    function addPoi(poiId) {
+        if (!selectedPois[activeDay].includes(poiId)) {
+            selectedPois[activeDay].push(poiId);
+            activePreset = null;
+        }
+        renderDayContent();
+        renderDayTabs();
+        renderSummary();
+        renderPresetBar();
+    }
+
+    function removePoi(poiId) {
+        selectedPois[activeDay] = selectedPois[activeDay].filter(id => id !== poiId);
+        activePreset = null;
+        renderDayContent();
+        renderDayTabs();
+        renderSummary();
+        renderPresetBar();
+    }
+
+    /* ═══════════════════════════════════════════
+       THEME
+       ═══════════════════════════════════════════ */
+    const saved = localStorage.getItem('planner-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    const toggle = document.getElementById('themeToggle');
+    function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('planner-theme', t);
+        toggle.textContent = t === 'dark' ? '🌙' : '☀️';
+    }
+    toggle.addEventListener('click', () => {
+        setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    });
+    document.addEventListener('keydown', e => { if (e.altKey && e.key === 'd') { toggle.click(); e.preventDefault(); } });
+    if (saved === 'dark') toggle.textContent = '🌙';
+
+    /* ═══════════════════════════════════════════
+       MAP
+       ═══════════════════════════════════════════ */
+    const catColors = {
+        history: '#1c69d4', view: '#e89b00', hike: '#00823b', food: '#c91432',
+        beach: '#009A97', nature: '#2e7d32', village: '#666666', culture: '#7e57c2'
+    };
+
+    const regionCenters = {
+        athens:      [37.9750, 23.7267],
+        delphi:      [38.4824, 22.5010],
+        meteora:     [39.7217, 21.6306],
+        ioannina:    [39.6650, 20.8537],
+        zagori:      [39.9100, 20.7530],
+        olympus:     [40.1034, 22.5020],
+        pelion:      [39.3850, 23.0500],
+        thermopylae: [38.7964, 22.5353]
+    };
+
+    let map = null;
+    let mapMarkers = [];
+    let mapLines   = [];
+    let mapVisible = true;
+
+    function initMap() {
+        map = L.map('map', { zoomControl: true, scrollWheelZoom: true });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 18
+        }).addTo(map);
+        map.setView([39.0, 22.0], 6);
+    }
+
+    function clearMapLayers() {
+        mapMarkers.forEach(m => map.removeLayer(m));
+        mapLines.forEach(l => map.removeLayer(l));
+        mapMarkers = [];
+        mapLines = [];
+    }
+
+    function makeIcon(color) {
+        return L.divIcon({
+            className: '',
+            html: `<svg width="24" height="34" viewBox="0 0 24 34"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 22 12 22s12-13 12-22C24 5.4 18.6 0 12 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>`,
+            iconSize: [24, 34],
+            iconAnchor: [12, 34],
+            popupAnchor: [0, -30]
+        });
+    }
+
+    function renderMap() {
+        if (!map || !mapVisible) return;
+        clearMapLayers();
+
+        document.getElementById('mapDayLabel').textContent = activeDay;
+
+        const dc = getDayConfig(activeDay);
+        const selIds = selectedPois[activeDay];
+        const bounds = [];
+
+        // Show region centers as subtle circle markers for context
+        dc.regions.forEach(r => {
+            const c = regionCenters[r];
+            if (c) {
+                const circle = L.circleMarker(c, {
+                    radius: 18, color: 'var(--accent)', weight: 1,
+                    fillColor: '#1c69d4', fillOpacity: 0.06, opacity: 0.2
+                }).addTo(map);
+                const label = L.tooltip({ permanent: true, direction: 'center', className: 'region-tooltip' })
+                    .setContent(`<span style="font-size:10px;font-weight:700;color:#1c69d4;text-transform:uppercase;letter-spacing:0.04em;">${regionNames[r]}</span>`);
+                circle.bindTooltip(label);
+                mapMarkers.push(circle);
+                bounds.push(c);
+            }
+        });
+
+        // Show selected POI markers
+        selIds.forEach((id, idx) => {
+            const p = poiMap[id];
+            if (!p.lat || !p.lng) return;
+            const color = catColors[p.cat[0]] || '#1c69d4';
+            const marker = L.marker([p.lat, p.lng], { icon: makeIcon(color) }).addTo(map);
+            marker.bindPopup(`
+                <div class="popup-cat">${p.cat.map(c => catConfig[c].icon + ' ' + catConfig[c].label).join(' · ')}</div>
+                <div class="popup-title">${idx + 1}. ${p.name}</div>
+                <div class="popup-desc">${p.desc}</div>
+                <div class="popup-hours">${fmtH(p.hours)}</div>
+            `, { maxWidth: 260 });
+            mapMarkers.push(marker);
+            bounds.push([p.lat, p.lng]);
+        });
+
+        // Connect selected POIs with a dashed line
+        if (selIds.length >= 2) {
+            const coords = selIds.map(id => [poiMap[id].lat, poiMap[id].lng]).filter(c => c[0] && c[1]);
+            if (coords.length >= 2) {
+                const line = L.polyline(coords, {
+                    color: '#1c69d4', weight: 2, dashArray: '6 4', opacity: 0.6
+                }).addTo(map);
+                mapLines.push(line);
+            }
+        }
+
+        // Also show available (unselected) POIs as small grey dots
+        pois.filter(p => dc.regions.includes(p.region) && !selIds.includes(p.id) && p.lat && p.lng).forEach(p => {
+            const dot = L.circleMarker([p.lat, p.lng], {
+                radius: 4, color: '#b2b2b2', weight: 1, fillColor: '#d6d6d6', fillOpacity: 0.5
+            }).addTo(map);
+            dot.bindPopup(`
+                <div class="popup-cat">${p.cat.map(c => catConfig[c].icon + ' ' + catConfig[c].label).join(' · ')}</div>
+                <div class="popup-title">${p.name}</div>
+                <div class="popup-desc">${p.desc}</div>
+                <div class="popup-hours">${fmtH(p.hours)} · not in plan</div>
+            `, { maxWidth: 240 });
+            mapMarkers.push(dot);
+        });
+
+        // Fit bounds
+        if (bounds.length > 0) {
+            if (bounds.length === 1) {
+                map.setView(bounds[0], 13);
+            } else {
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+            }
+        }
+
+        // Render legend
+        renderMapLegend();
+    }
+
+    function renderMapLegend() {
+        const dc = getDayConfig(activeDay);
+        const selIds = selectedPois[activeDay];
+        const usedCats = new Set();
+        selIds.forEach(id => poiMap[id].cat.forEach(c => usedCats.add(c)));
+
+        const el = document.getElementById('mapLegend');
+        if (usedCats.size === 0) {
+            el.innerHTML = '<span style="font-size:11px;color:var(--text-sec);">Select POIs to see them on the map</span>';
+            return;
+        }
+        el.innerHTML = [...usedCats].sort().map(c =>
+            `<span class="legend-item"><span class="legend-dot" style="background:${catColors[c]}"></span>${catConfig[c].icon} ${catConfig[c].label}</span>`
+        ).join('') + '<span class="legend-item"><span class="legend-dot" style="background:#d6d6d6;border-color:#b2b2b2"></span>Available (not selected)</span>';
+    }
+
+    // Map toggle
+    document.getElementById('mapToggleBtn').addEventListener('click', () => {
+        const mapEl = document.getElementById('map');
+        const legendEl = document.getElementById('mapLegend');
+        const btn = document.getElementById('mapToggleBtn');
+        mapVisible = !mapVisible;
+        mapEl.style.display = mapVisible ? '' : 'none';
+        legendEl.style.display = mapVisible ? '' : 'none';
+        btn.textContent = mapVisible ? '▲ Hide map' : '▼ Show map';
+        if (mapVisible) {
+            setTimeout(() => { map.invalidateSize(); renderMap(); }, 100);
+        }
+    });
+
+    // Patch renderAll to include map
+    const _origRenderAll = renderAll;
+    // We just redefine it
+    function renderAllWithMap() {
+        renderRoutePicker();
+        renderPresetBar();
+        renderDayTabs();
+        renderDayContent();
+        renderSummary();
+        renderMap();
+    }
+
+    // Override addPoi/removePoi to update map
+    const _origAddPoi = addPoi;
+    const _origRemovePoi = removePoi;
+
+    addPoi = function(poiId) {
+        if (!selectedPois[activeDay].includes(poiId)) {
+            selectedPois[activeDay].push(poiId);
+            activePreset = null;
+        }
+        renderDayContent(); renderDayTabs(); renderSummary(); renderPresetBar(); renderMap();
+    };
+    removePoi = function(poiId) {
+        selectedPois[activeDay] = selectedPois[activeDay].filter(id => id !== poiId);
+        activePreset = null;
+        renderDayContent(); renderDayTabs(); renderSummary(); renderPresetBar(); renderMap();
+    };
+
+    // Override day tab click to update map
+    const _origRenderDayTabs = renderDayTabs;
+    const origRenderDayTabsFn = renderDayTabs;
+    renderDayTabs = function() {
+        origRenderDayTabsFn();
+        document.querySelectorAll('.day-tab').forEach(tab => {
+            tab.addEventListener('click', () => renderMap());
+        });
+    };
+
+    /* ── Init ── */
+    initMap();
+    loadPreset('views-history');
+    renderMap();
+    </script>
+</body>
+</html>
