@@ -161,7 +161,7 @@ fun PoiCard(
                     }
                 } else if (!isAdded) {
                     TextButton(onClick = onAdd) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Add ${poi.name}", modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(2.dp))
                         Text(
                             text = if (isOverBudget) "Add ⚠" else "Add",

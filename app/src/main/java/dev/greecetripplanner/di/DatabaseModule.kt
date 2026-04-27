@@ -22,7 +22,7 @@ object DatabaseModule {
             context,
             TripDatabase::class.java,
             "greece_trip.db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
 
     @Provides
     fun provideTripDayDao(db: TripDatabase): TripDayDao = db.tripDayDao()

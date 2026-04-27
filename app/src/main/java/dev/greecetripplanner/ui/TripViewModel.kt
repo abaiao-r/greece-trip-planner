@@ -2,6 +2,7 @@ package dev.greecetripplanner.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.greecetripplanner.data.TripData
 import dev.greecetripplanner.data.model.TripDay
 import dev.greecetripplanner.data.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,19 @@ data class TripUiState(
     val activeDay: Int = 0,
 )
 
+data class TripStats(
+    val totalKm: Int = 0,
+    val totalPois: Int = 0,
+    val uniqueRegions: Int = 0,
+    val activeDays: Int = 0,
+    val fuelCostEur: Double = 0.0,
+) {
+    companion object {
+        const val FUEL_CONSUMPTION_L_PER_100KM = 7.0
+        const val FUEL_PRICE_EUR_PER_L = 1.85
+    }
+}
+
 /** Shared trip state used by all screens: days, active day, dark mode, active template. */
 @HiltViewModel
 class TripViewModel @Inject constructor(
@@ -46,6 +60,21 @@ class TripViewModel @Inject constructor(
     ) { days, day ->
         TripUiState(days = days, activeDay = day)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TripUiState())
+
+    val stats: StateFlow<TripStats> = repository.observeDays().combine(_activeDay) { days, _ ->
+        val totalKm = days.zipWithNext().sumOf { (prev, cur) ->
+            val a = prev.region; val b = cur.region
+            if (a != null && b != null && a != b) TripData.driveKm(a, b) else 0
+        }
+        val fuelLitres = totalKm * TripStats.FUEL_CONSUMPTION_L_PER_100KM / 100.0
+        TripStats(
+            totalKm = totalKm,
+            totalPois = days.sumOf { it.poiIds.size },
+            uniqueRegions = days.mapNotNull { it.region }.distinct().size,
+            activeDays = days.count { it.poiIds.isNotEmpty() },
+            fuelCostEur = fuelLitres * TripStats.FUEL_PRICE_EUR_PER_L,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TripStats())
 
     fun setActiveDay(day: Int) { _activeDay.value = day }
 
@@ -70,6 +99,14 @@ class TripViewModel @Inject constructor(
             repository.clearAll()
             _activeDay.value = 0
             _activeTemplate.value = null
+        }
+    }
+
+    fun updateUserNote(dayIndex: Int, note: String) {
+        viewModelScope.launch {
+            val days = repository.getDays()
+            val day = days[dayIndex]
+            repository.updateDay(day.copy(userNote = note.ifBlank { null }))
         }
     }
 }

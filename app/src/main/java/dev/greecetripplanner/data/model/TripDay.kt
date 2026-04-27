@@ -12,7 +12,8 @@ data class TripDay(
     val date: String,
     val region: String? = null,
     val poiIds: List<String> = emptyList(),
-    val note: String? = null
+    val note: String? = null,
+    val userNote: String? = null,
 ) {
     companion object {
         const val TOTAL_DAYS = 8

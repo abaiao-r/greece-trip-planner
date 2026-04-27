@@ -26,7 +26,33 @@ class PlanViewModel @Inject constructor(
     private val _activeFilter = MutableStateFlow("all")
     val activeFilter: StateFlow<String> = _activeFilter.asStateFlow()
 
+    /** User-created custom POIs, stored in-memory per session. */
+    private val _customPois = MutableStateFlow<List<Poi>>(emptyList())
+    val customPois: StateFlow<List<Poi>> = _customPois.asStateFlow()
+
     fun setFilter(cat: String) { _activeFilter.value = cat }
+
+    /** Create a custom POI for the given region and add it to the day. */
+    fun addCustomPoi(dayIndex: Int, name: String, hours: Double, regionKey: String) {
+        val id = "custom_${System.currentTimeMillis()}"
+        val region = TripData.regionMap[regionKey]
+        val poi = Poi(
+            id = id,
+            name = name,
+            region = regionKey,
+            hours = hours,
+            categories = listOf("custom"),
+            lat = region?.centerLat ?: 0.0,
+            lng = region?.centerLng ?: 0.0,
+            description = "Custom activity",
+        )
+        _customPois.value = _customPois.value + poi
+        addPoi(dayIndex, id)
+    }
+
+    /** Resolve a POI by ID, checking custom POIs first then static data. */
+    fun resolvePoi(id: String): Poi? =
+        _customPois.value.find { it.id == id } ?: TripData.poiMap[id]
 
     // ── Region management ──
 
@@ -67,6 +93,51 @@ class PlanViewModel @Inject constructor(
             repository.updateDay(days[sourceDay].copy(poiIds = days[sourceDay].poiIds - poiId))
             val target = days[targetDay]
             repository.updateDay(target.copy(poiIds = target.poiIds + poiId))
+        }
+    }
+
+    /** Sort POIs on a day by nearest-neighbor from region center. */
+    fun optimizeRoute(dayIndex: Int) {
+        viewModelScope.launch {
+            val days = repository.getDays()
+            val day = days[dayIndex]
+            if (day.poiIds.size < 2) return@launch
+            val region = day.region?.let { TripData.regionMap[it] } ?: return@launch
+            val pois = day.poiIds.mapNotNull { TripData.poiMap[it] }
+            if (pois.size != day.poiIds.size) return@launch
+
+            // Greedy nearest-neighbor starting from region center
+            val sorted = mutableListOf<String>()
+            val remaining = pois.toMutableList()
+            var curLat = region.centerLat
+            var curLng = region.centerLng
+            while (remaining.isNotEmpty()) {
+                val nearest = remaining.minBy { p ->
+                    val dlat = p.lat - curLat
+                    val dlng = p.lng - curLng
+                    dlat * dlat + dlng * dlng
+                }
+                sorted.add(nearest.id)
+                curLat = nearest.lat
+                curLng = nearest.lng
+                remaining.remove(nearest)
+            }
+            repository.updateDay(day.copy(poiIds = sorted))
+        }
+    }
+
+    /** Swap a POI with its neighbor in the day's poi list. */
+    fun reorderPoi(dayIndex: Int, poiId: String, direction: Int) {
+        viewModelScope.launch {
+            val days = repository.getDays()
+            val day = days[dayIndex]
+            val list = day.poiIds.toMutableList()
+            val idx = list.indexOf(poiId)
+            if (idx == -1) return@launch
+            val newIdx = idx + direction
+            if (newIdx < 0 || newIdx >= list.size) return@launch
+            list[idx] = list[newIdx].also { list[newIdx] = list[idx] }
+            repository.updateDay(day.copy(poiIds = list))
         }
     }
 

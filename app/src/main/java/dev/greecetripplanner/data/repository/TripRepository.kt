@@ -73,14 +73,16 @@ class TripRepository @Inject constructor(
             date = TripDay.DATES[index],
             region = region,
             poiIds = ids,
-            note = TripDay.DAY_NOTES[index]
+            note = TripDay.DAY_NOTES[index],
+            userNote = userNote,
         )
     }
 
     private fun TripDay.toEntity() = TripDayEntity(
         dayIndex = dayIndex,
         region = region,
-        poiIdsJson = json.encodeToString(poiIds)
+        poiIdsJson = json.encodeToString(poiIds),
+        userNote = userNote,
     )
 
     private fun defaultDay(index: Int) = TripDay(

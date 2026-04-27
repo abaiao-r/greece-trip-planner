@@ -11,6 +11,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import dev.greecetripplanner.data.TripData
 import dev.greecetripplanner.data.model.Poi
 import dev.greecetripplanner.data.model.TripDay
+import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -40,6 +41,12 @@ fun MapComposable(
     val mapView = remember { MapView(context) }
 
     DisposableEffect(Unit) {
+        // Configure offline tile caching
+        val osmConfig = Configuration.getInstance()
+        osmConfig.osmdroidTileCache = context.cacheDir.resolve("osmdroid")
+        osmConfig.tileDownloadThreads = 4.toShort()
+        osmConfig.tileFileSystemCacheMaxBytes = 100L * 1024 * 1024 // 100 MB
+
         mapView.setTileSource(CARTO_VOYAGER)
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(7.0)
@@ -114,6 +121,35 @@ private fun updateMapOverlays(
                 outlinePaint.pathEffect = DashPathEffect(floatArrayOf(20f, 10f), 0f)
             }
             mapView.overlays.add(routeLine)
+        }
+
+        // Add km labels between consecutive regions
+        val regionKeys = days.mapNotNull { it.region }
+        val deduped = mutableListOf<String>()
+        for (r in regionKeys) {
+            if (deduped.isEmpty() || deduped.last() != r) deduped.add(r)
+        }
+        for (i in 0 until deduped.size - 1) {
+            val a = deduped[i]
+            val b = deduped[i + 1]
+            val km = TripData.driveKm(a, b)
+            if (km > 0) {
+                val rA = TripData.regionMap[a] ?: continue
+                val rB = TripData.regionMap[b] ?: continue
+                val midLat = (rA.centerLat + rB.centerLat) / 2
+                val midLng = (rA.centerLng + rB.centerLng) / 2
+                val kmMarker = Marker(mapView).apply {
+                    position = GeoPoint(midLat, midLng)
+                    title = "$km km"
+                    snippet = "${rA.name} → ${rB.name}"
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    setTextLabelFontSize(28)
+                    setTextLabelBackgroundColor(0xCCFFFFFF.toInt())
+                    setTextLabelForegroundColor(0xFF1C69D4.toInt())
+                    icon = null
+                }
+                mapView.overlays.add(kmMarker)
+            }
         }
 
         allPoints.addAll(routePoints)
