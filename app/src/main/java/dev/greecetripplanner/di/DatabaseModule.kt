@@ -24,7 +24,11 @@ object DatabaseModule {
             TripDatabase::class.java,
             "greece_trip.db"
         )
-            .addMigrations(TripDatabase.MIGRATION_1_2)
+            .addMigrations(
+                TripDatabase.MIGRATION_1_2,
+                TripDatabase.MIGRATION_2_3,
+                TripDatabase.MIGRATION_1_3,
+            )
             .build()
 
     @Provides
