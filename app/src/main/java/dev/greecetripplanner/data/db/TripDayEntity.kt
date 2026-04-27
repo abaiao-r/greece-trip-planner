@@ -11,6 +11,5 @@ import androidx.room.PrimaryKey
 data class TripDayEntity(
     @PrimaryKey val dayIndex: Int,
     val region: String?,
-    val poiIdsJson: String, // JSON array of POI ID strings
-    val userNote: String? = null,
+    val poiIdsJson: String // JSON array of POI ID strings
 )

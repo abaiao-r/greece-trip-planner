@@ -8,15 +8,15 @@ plugins {
 }
 
 android {
-    namespace = "dev.greecetripplanner"
+    namespace = "com.andresilva.greecetripplanner"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.greecetripplanner"
+        applicationId = "com.andresilva.greecetripplanner"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.3.0"
+        versionCode = 5
+        versionName = "1.5.0"
     }
 
     signingConfigs {
@@ -99,8 +99,4 @@ dependencies {
 
     // Core
     implementation(libs.core.ktx)
-
-    // Testing
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 }

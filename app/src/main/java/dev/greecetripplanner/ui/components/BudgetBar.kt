@@ -23,11 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.greecetripplanner.ui.screens.plan.DayBudget
+import dev.greecetripplanner.ui.DayBudget
 import dev.greecetripplanner.util.formatHours
 
 @Composable
@@ -67,10 +65,7 @@ fun BudgetBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .semantics {
-                        contentDescription = "Budget used ${(budget.percentage * 100).toInt()} percent"
-                    },
+                    .clip(RoundedCornerShape(4.dp)),
                 color = statusColor,
                 trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
             )

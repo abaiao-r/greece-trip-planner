@@ -16,8 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,10 +38,7 @@ import dev.greecetripplanner.util.formatHours
 fun SelectedPoiItem(
     poi: Poi,
     index: Int,
-    totalCount: Int = 1,
     onRemove: () -> Unit,
-    onMoveUp: (() -> Unit)? = null,
-    onMoveDown: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -113,39 +108,6 @@ fun SelectedPoiItem(
             )
 
             Spacer(Modifier.width(8.dp))
-
-            // Reorder buttons
-            if (onMoveUp != null) {
-                IconButton(
-                    onClick = onMoveUp,
-                    modifier = Modifier.size(24.dp),
-                    enabled = index > 0,
-                ) {
-                    Icon(
-                        Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Move up",
-                        modifier = Modifier.size(14.dp),
-                        tint = if (index > 0) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                    )
-                }
-            }
-
-            if (onMoveDown != null) {
-                IconButton(
-                    onClick = onMoveDown,
-                    modifier = Modifier.size(24.dp),
-                    enabled = index < totalCount - 1,
-                ) {
-                    Icon(
-                        Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Move down",
-                        modifier = Modifier.size(14.dp),
-                        tint = if (index < totalCount - 1) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                    )
-                }
-            }
 
             // Remove button
             IconButton(

@@ -2,6 +2,7 @@ package dev.greecetripplanner.di
 
 import android.content.Context
 import androidx.room.Room
+import dev.greecetripplanner.data.db.CustomTemplateDao
 import dev.greecetripplanner.data.db.TripDatabase
 import dev.greecetripplanner.data.db.TripDayDao
 import dagger.Module
@@ -22,8 +23,13 @@ object DatabaseModule {
             context,
             TripDatabase::class.java,
             "greece_trip.db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(TripDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideTripDayDao(db: TripDatabase): TripDayDao = db.tripDayDao()
+
+    @Provides
+    fun provideCustomTemplateDao(db: TripDatabase): CustomTemplateDao = db.customTemplateDao()
 }

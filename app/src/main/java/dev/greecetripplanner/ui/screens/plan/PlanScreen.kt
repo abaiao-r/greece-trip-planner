@@ -18,36 +18,29 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import dev.greecetripplanner.data.TripData
 import dev.greecetripplanner.data.model.TripDay
 import dev.greecetripplanner.ui.TripViewModel
 import dev.greecetripplanner.ui.components.BudgetBar
+import dev.greecetripplanner.ui.components.CustomRouteDialog
 import dev.greecetripplanner.ui.components.DayTabs
 import dev.greecetripplanner.ui.components.PoiCard
 import dev.greecetripplanner.ui.components.RegionDropdown
@@ -64,14 +57,13 @@ fun PlanScreen(
     viewModel: TripViewModel,
     onSwitchToShow: () -> Unit,
     onSwitchToMap: () -> Unit,
-    planViewModel: PlanViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val activeFilter by planViewModel.activeFilter.collectAsState()
     val darkModeOverride by viewModel.darkModeOverride.collectAsState()
-    val activeTemplateKey by viewModel.activeTemplate.collectAsState()
+    val activeTemplate by viewModel.activeTemplate.collectAsState()
+    val customTemplates by viewModel.customTemplates.collectAsState()
+    val showDialog by viewModel.showCustomRouteDialog.collectAsState()
     val context = LocalContext.current
-    var showCustomPoiDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -107,8 +99,11 @@ fun PlanScreen(
         ) {
             // Templates
             TemplateBar(
-                activeTemplateKey = activeTemplateKey,
+                activeTemplate = activeTemplate,
+                customTemplates = customTemplates,
                 onTemplateSelected = { viewModel.applyTemplate(it.key) },
+                onCreateCustom = { viewModel.openCustomRouteDialog() },
+                onDeleteCustom = { viewModel.deleteCustomTemplate(it) },
             )
             Spacer(Modifier.height(4.dp))
 
@@ -164,18 +159,6 @@ fun PlanScreen(
                         ),
                     )
                 }
-
-                // User note
-                OutlinedTextField(
-                    value = day.userNote ?: "",
-                    onValueChange = { viewModel.updateUserNote(uiState.activeDay, it) },
-                    label = { Text("Your notes") },
-                    placeholder = { Text("Add personal notes for this day...") },
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    minLines = 1,
-                    maxLines = 3,
-                )
                 Spacer(Modifier.height(6.dp))
 
                 // Region dropdown
@@ -185,15 +168,14 @@ fun PlanScreen(
                     }
                     RegionDropdown(
                         selectedRegion = selectedRegion,
-                        onRegionSelected = { planViewModel.setDayRegion(uiState.activeDay, it?.key) },
+                        onRegionSelected = { viewModel.setDayRegion(uiState.activeDay, it?.key) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(8.dp))
                 }
 
                 // Budget bar
-                val prevRegion = uiState.days.getOrNull(day.dayIndex - 1)?.region
-                val budget = planViewModel.dayBudget(day, prevRegion)
+                val budget = viewModel.dayBudget(day)
                 BudgetBar(budget = budget)
             }
 
@@ -241,60 +223,36 @@ fun PlanScreen(
                 // Selected POIs section
                 if (day.poiIds.isNotEmpty()) {
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "Selected (${day.poiIds.size})",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                modifier = Modifier.padding(vertical = 4.dp),
-                            )
-                            if (day.poiIds.size >= 2) {
-                                TextButton(onClick = { planViewModel.optimizeRoute(uiState.activeDay) }) {
-                                    Text("⚡ Optimize")
-                                }
-                            }
-                        }
+                        Text(
+                            text = "Selected (${day.poiIds.size})",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
                     }
                     itemsIndexed(day.poiIds, key = { _, id -> "sel_$id" }) { idx, poiId ->
-                        val poi = planViewModel.resolvePoi(poiId) ?: return@itemsIndexed
+                        val poi = TripData.poiMap[poiId] ?: return@itemsIndexed
                         if (idx > 0) {
-                            val transitMin = day.region?.let { TripData.regionMap[it]?.transitMinutes } ?: 15
-                            TransitChip(minutes = transitMin, isSameRegion = true)
+                            TransitChip(minutes = 15, isSameRegion = true)
                         }
                         SelectedPoiItem(
                             poi = poi,
                             index = idx,
-                            totalCount = day.poiIds.size,
-                            onRemove = { planViewModel.removePoi(uiState.activeDay, poiId) },
-                            onMoveUp = { planViewModel.reorderPoi(uiState.activeDay, poiId, -1) },
-                            onMoveDown = { planViewModel.reorderPoi(uiState.activeDay, poiId, 1) },
+                            onRemove = { viewModel.removePoi(poiId) },
                         )
                     }
                     item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
                 }
 
-                // Custom POI button
-                if (day.region != null) {
-                    item {
-                        TextButton(onClick = { showCustomPoiDialog = true }) {
-                            Text("+ Custom activity")
-                        }
-                    }
-                }
-
                 // Category filter chips
                 item {
                     CategoryFilterRow(
-                        activeFilter = activeFilter,
-                        onFilterChanged = { planViewModel.setFilter(it) },
+                        activeFilter = uiState.activeFilter,
+                        onFilterChanged = { viewModel.setFilter(it) },
                     )
                 }
 
                 // Available POIs
-                val available = planViewModel.filteredAvailablePois(day)
+                val available = viewModel.filteredAvailablePois(day)
                 item {
                     Text(
                         text = "Available POIs (${available.size})",
@@ -303,90 +261,30 @@ fun PlanScreen(
                     )
                 }
                 items(available, key = { "avail_${it.id}" }) { poi ->
-                    val addedOnDay = planViewModel.poiOnDay(uiState.days, poi.id)
+                    val addedOnDay = viewModel.poiOnDay(poi.id)
                     val isAdded = addedOnDay != -1
-                    val prevRgn = uiState.days.getOrNull(day.dayIndex - 1)?.region
-                    val budget = planViewModel.dayBudget(day, prevRgn)
+                    val budget = viewModel.dayBudget(day)
                     PoiCard(
                         poi = poi,
                         isAdded = isAdded,
                         addedOnDay = if (isAdded) addedOnDay else null,
                         isOverBudget = budget.freeH < poi.hours,
-                        onAdd = { planViewModel.addPoi(uiState.activeDay, poi.id) },
-                        onMove = if (isAdded) {{ planViewModel.movePoi(uiState.activeDay, poi.id) }} else null,
+                        onAdd = { viewModel.addPoi(poi.id) },
+                        onMove = if (isAdded) {{ viewModel.movePoi(poi.id) }} else null,
                     )
                 }
             }
         }
     }
 
-    // Custom POI dialog
-    if (showCustomPoiDialog) {
-        val day = uiState.days.getOrNull(uiState.activeDay)
-        val regionKey = day?.region
-        if (regionKey != null) {
-            CustomPoiDialog(
-                onDismiss = { showCustomPoiDialog = false },
-                onConfirm = { name, hours ->
-                    planViewModel.addCustomPoi(uiState.activeDay, name, hours, regionKey)
-                    showCustomPoiDialog = false
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CustomPoiDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (name: String, hours: Double) -> Unit,
-) {
-    var name by remember { mutableStateOf("") }
-    var hoursText by remember { mutableStateOf("1.0") }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "Add Custom Activity",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                )
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = hoursText,
-                    onValueChange = { hoursText = it },
-                    label = { Text("Duration (hours)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(
-                        onClick = {
-                            val hours = hoursText.toDoubleOrNull() ?: 1.0
-                            if (name.isNotBlank()) onConfirm(name.trim(), hours)
-                        },
-                    ) { Text("Add") }
-                }
-            }
-        }
+    // Custom route creation dialog
+    if (showDialog) {
+        CustomRouteDialog(
+            onDismiss = { viewModel.closeCustomRouteDialog() },
+            onSave = { name, icon, regions ->
+                viewModel.saveCustomTemplate(name, icon, regions)
+            },
+        )
     }
 }
 

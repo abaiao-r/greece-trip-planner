@@ -333,16 +333,6 @@ object TripData {
                 4 to listOf("thes-01", "thes-04", "thes-06", "thes-07", "thes-08"),
                 5 to listOf("thes-05", "thes-11", "thes-13", "thes-09", "thes-10", "thes-12"),
                 6 to emptyList(), 7 to listOf("ath-04")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Head to Psyrri for dinner and craft cocktails. Ease into Greek time.", "💡 Hotel near Monastiraki. Psyrri has the best mix of traditional tavernas and modern bars.", listOf("food")),
-                1 to DayNarrative("Acropolis · Ancient Agora · National Garden · Sunset at Areopagus", "Full day in Athens. Acropolis and Parthenon at opening, then Ancient Agora with the best-preserved Greek temple, cool off in the National Garden, and finish with sunset at Areopagus Rock.", "💡 8 AM Acropolis → 11 AM Agora → 1 PM Garden → souvlaki in Plaka → 8 PM Areopagus sunset.", listOf("monument", "view", "food")),
-                2 to DayNarrative("Oracle of Delphi · Tholos · Museum · Theater sunset · Arachova", "Drive to Delphi. Walk the Sacred Way to the Temple of Apollo, see the iconic Tholos, visit the museum with the Charioteer bronze, and catch sunset from the ancient theater overlooking the olive valley. Evening in charming Arachova.", "💡 Noon arrival → site → 3 PM Tholos → 4 PM museum → 8 PM theater sunset → Arachova dinner.", listOf("monument", "view", "food")),
-                3 to DayNarrative("Monasteries in the sky · Rock pillars · Panoramic sunset", "Drive to Meteora. Visit Great Meteoron, Varlaam, and Holy Trinity monasteries perched on towering rock pillars. Finish at Psaropetra viewpoint for sunset over all six monasteries.", "💡 Noon arrival → 3 monasteries → Psaropetra sunset. Covered shoulders/knees required.", listOf("monument", "view")),
-                4 to DayNarrative("White Tower · Byzantine walls · Museums · Ano Poli panorama", "Drive to Thessaloniki. White Tower on the waterfront, Arch of Galerius, Ano Poli upper town walk along Byzantine walls, then the Museum of Byzantine Culture and Archaeological Museum.", "💡 Noon arrival → White Tower → Ano Poli → museums. Save food exploration for tomorrow.", listOf("monument", "view")),
-                5 to DayNarrative("Greece's food capital · Markets · Waterfront · Nightlife", "Full day eating and exploring Thessaloniki. Aristotelous Square bougatsa, Modiano Market food hall, waterfront promenade, Agios Dimitrios church, and Ladadika bars at night.", "💡 Thessaloniki is about eating. Bougatsa at Bantis, mussels at Ouzou Melathron, Ladadika for nightlife.", listOf("food", "monument", "view")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens. Flexible day — arrive and rest, or explore a neighborhood you missed.", "💡 Leave early for a relaxed drive. Arrive Athens by mid-afternoon.", listOf("drive")),
-                7 to DayNarrative("National Archaeological Museum · Afternoon flight", "Morning at the National Archaeological Museum — Mask of Agamemnon, Antikythera mechanism. Then head to the airport.", "💡 9 AM museum → 11:30 depart → airport by noon.", listOf("monument"))
             )
         ),
         TripTemplate(
@@ -356,16 +346,6 @@ object TripData {
                 4 to listOf("zag-01", "zag-02", "zag-04", "zag-05", "zag-10"),
                 5 to listOf("zag-06", "zag-08", "zag-09"),
                 6 to emptyList(), 7 to listOf("ath-14")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Head to Psyrri for dinner and first taste of Greek nightlife.", "💡 Hotel near Monastiraki. Psyrri for tavernas and bars.", listOf("food")),
-                1 to DayNarrative("Acropolis · Lycabettus Hill · Philopappos sunset · Plaka souvlaki", "Hike-focused day in Athens. Acropolis in the morning, climb Lycabettus Hill for 360° views, Philopappos Hill for sunset, and souvlaki in Plaka.", "💡 8 AM Acropolis → 11 AM Lycabettus → lunch → 7 PM Philopappos sunset → Plaka dinner.", listOf("monument", "hike", "view", "food")),
-                2 to DayNarrative("Oracle of Delphi · Tholos · Museum · Mountain village Arachova", "Drive to Delphi. Explore the archaeological site on Mount Parnassus, see the iconic Tholos, visit the museum, and wander charming Arachova village.", "💡 Noon arrival → site → Tholos → museum → Arachova for local cheese and wine.", listOf("monument", "view", "food")),
-                3 to DayNarrative("Meteora monasteries · Forest trails · Pinnacle hike · Sunset", "Drive to Meteora. Visit Great Meteoron, hike forest trails between rock pillars, scramble to the Adrachti pinnacle, and finish at Psaropetra sunset viewpoint.", "💡 Noon arrival → Great Meteoron → afternoon trails → Adrachti → Psaropetra sunset.", listOf("monument", "hike", "view")),
-                4 to DayNarrative("Gorge viewpoints · Stone bridges · Mountain village life", "Full day in Zagori. Oxya glass viewpoint over Vikos Gorge, hike to Beloi viewpoint, visit the triple-arched Plakidas Bridge, explore Monodendri village. Mountain taverna dinner.", "💡 9 AM Oxya → 11 AM Beloi → 1 PM lunch → 3 PM bridge → 5 PM village stroll → dinner.", listOf("hike", "view", "monument", "food")),
-                5 to DayNarrative("Papingo pools · Vradeto Steps · Stone bridges walk", "Explore the twin Papingo villages with natural turquoise rock pools for swimming. Hike the ancient Vradeto Steps (1,100 stone stairs), and walk the Kipoi stone bridges.", "💡 9 AM Papingo → swim → 1 PM lunch → 3 PM Vradeto Steps → 5 PM Kipoi bridges.", listOf("hike", "nature", "view")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens. Flexible day — arrive and rest, or explore a neighborhood you missed.", "💡 Leave early for a relaxed drive. Arrive Athens by mid-afternoon.", listOf("drive")),
-                7 to DayNarrative("Panathenaic Stadium · Afternoon flight", "Morning at the all-marble Panathenaic Stadium — site of the first modern Olympics. Run the track, then head to the airport.", "💡 9 AM stadium → 11 AM depart → airport by noon.", listOf("monument"))
             )
         ),
         TripTemplate(
@@ -379,16 +359,6 @@ object TripData {
                 4 to listOf("hal-03", "hal-05", "hal-06"),
                 5 to listOf("met-01", "met-02", "met-05", "met-07"),
                 6 to emptyList(), 7 to listOf("ath-04")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Head to Psyrri for dinner and drinks.", "💡 Hotel near Monastiraki. Psyrri for tavernas and cocktails.", listOf("food")),
-                1 to DayNarrative("Acropolis · Museum · Plaka stroll · Areopagus sunset", "Morning at the Acropolis and museum. Afternoon souvlaki in Plaka. Sunset at Areopagus Rock with the lit Parthenon above.", "💡 8 AM Acropolis → 10:30 Museum → Plaka lunch → 8 PM Areopagus sunset.", listOf("monument", "food", "view")),
-                2 to DayNarrative("Thessaloniki · Waterfront · Markets · Nightlife", "Fly or drive to Thessaloniki. White Tower, Aristotelous Square bougatsa, Modiano Market, waterfront promenade, and Ladadika district at night.", "💡 Food is the priority. Bougatsa at Bantis, seafood at Modiano, Ladadika for bars.", listOf("monument", "food", "view")),
-                3 to DayNarrative("Halkidiki beaches · Turquoise lagoons · Cliff village", "Drive to Halkidiki's first peninsula. Kassandra beaches with turquoise water, cliff-top Afytos village, and Vourvourou's Caribbean-like lagoon.", "💡 9 AM depart → Kassandra beaches → Afytos lunch → Vourvourou swim.", listOf("beach", "view", "food")),
-                4 to DayNarrative("Sithonia coast · Hidden coves · Mount Athos view", "Explore Halkidiki's second peninsula. Scenic coastal drive, Sarti beach with Mount Athos view, and Porto Koufo's hidden natural harbor for fresh fish.", "💡 Morning coast drive → Sarti swim → Porto Koufo lunch → afternoon free.", listOf("beach", "view", "food")),
-                5 to DayNarrative("Monasteries in the sky · Sunset viewpoint · Kalambaka dinner", "Drive to Meteora. Visit Great Meteoron and Varlaam monasteries, catch sunset at Psaropetra with all six monasteries visible, dinner in Kalambaka.", "💡 Noon arrival → 2 monasteries → Psaropetra sunset → Kalambaka dinner.", listOf("monument", "view", "food")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens. Arrive and rest or explore.", "💡 Leave early for a relaxed drive.", listOf("drive")),
-                7 to DayNarrative("National Archaeological Museum · Afternoon flight", "Morning at the National Archaeological Museum. Then airport.", "💡 9 AM museum → airport by noon.", listOf("monument"))
             )
         ),
         TripTemplate(
@@ -402,16 +372,6 @@ object TripData {
                 4 to listOf("oly-01", "oly-05", "oly-06"),
                 5 to listOf("pln-03", "pln-02", "pln-04", "pln-08"),
                 6 to emptyList(), 7 to listOf("ath-14")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Psyrri for dinner and drinks.", "💡 Hotel near Monastiraki.", listOf("food")),
-                1 to DayNarrative("Acropolis · Ancient Agora · National Garden · Plaka sunset", "Full Athens day. Acropolis, Ancient Agora, cool off in the National Garden, souvlaki in Plaka, Areopagus sunset.", "💡 8 AM Acropolis → Agora → Garden → Plaka → 8 PM sunset.", listOf("monument", "view", "food")),
-                2 to DayNarrative("Oracle of Delphi · Tholos · Museum · Arachova village", "Drive to Delphi. Sacred Way, Temple of Apollo, Tholos, museum, and evening in Arachova.", "💡 Noon arrival → site → Tholos → museum → Arachova dinner.", listOf("monument", "view", "food")),
-                3 to DayNarrative("Monasteries in the sky · Holy Trinity · Panoramic sunset", "Drive to Meteora. Visit Great Meteoron, Varlaam, and dramatic Holy Trinity. Psaropetra sunset.", "💡 Noon arrival → 3 monasteries → Psaropetra sunset. Covered shoulders/knees.", listOf("monument", "view")),
-                4 to DayNarrative("Home of the gods · Gorge waterfalls · Ancient Dion", "Drive to Mount Olympus. Hike the Enipeas Gorge (river canyon, waterfalls), visit Ancient Dion sacred city, dinner in Litochoro square.", "💡 Noon arrival → Enipeas Gorge → Ancient Dion → Litochoro dinner.", listOf("hike", "monument", "food")),
-                5 to DayNarrative("Pelion villages · Forest trail to beach · Damouchari harbor", "Drive to Pelion. Makrinitsa \"balcony\" village, hike the kalderimi to Mylopotamos beach, visit Damouchari (Mamma Mia harbor), mountain taverna in Kissos.", "💡 9 AM Makrinitsa → 11 AM kalderimi hike → beach swim → Damouchari → Kissos dinner.", listOf("hike", "beach", "view", "food")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens. Flexible day.", "💡 Leave early, arrive Athens by mid-afternoon.", listOf("drive")),
-                7 to DayNarrative("Panathenaic Stadium · Afternoon flight", "Morning at the marble Panathenaic Stadium. Then airport.", "💡 9 AM stadium → airport by noon.", listOf("monument"))
             )
         ),
         TripTemplate(
@@ -425,16 +385,6 @@ object TripData {
                 4 to listOf("ver-01", "ver-02", "pla-01", "pla-02"),
                 5 to listOf("thes-01", "thes-04", "thes-07", "thes-08", "thes-06"),
                 6 to emptyList(), 7 to listOf("ath-05")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Psyrri for traditional taverna dinner.", "💡 Hotel near Monastiraki. Psyrri is walkable.", listOf("food")),
-                1 to DayNarrative("Acropolis · Agora · Nat. Arch. Museum · Temple of Zeus · Stadium", "The ultimate Athens history day. Acropolis, Ancient Agora, National Archaeological Museum (Mask of Agamemnon), Temple of Olympian Zeus, Panathenaic Stadium.", "💡 8 AM Acropolis → Agora → lunch → Museum (2h) → Zeus → Stadium.", listOf("monument")),
-                2 to DayNarrative("Oracle of Delphi · Museum · Theater sunset", "Drive to Delphi. Walk the Sacred Way, see the Tholos, explore the museum (Charioteer bronze), and catch sunset from the ancient theater.", "💡 Noon arrival → site → Tholos → museum → theater sunset.", listOf("monument", "view")),
-                3 to DayNarrative("Pass of the 300 Spartans · Hot springs", "Drive north through Thermopylae. Leonidas monument at the battlefield where 300 Spartans held the pass. Soak in free natural sulfur hot springs at the cliff base.", "💡 Quick highway stop. Monument + hot springs can be done in 1-2 hours.", listOf("monument", "nature")),
-                4 to DayNarrative("Royal Tombs of Philip II · Birthplace of Alexander the Great", "Morning at Vergina — underground museum with Philip II's gold wreath, armor, and tomb (one of Greece's greatest finds). Afternoon at Pella — Alexander's birthplace, stunning floor mosaics.", "💡 9 AM Vergina → 12 PM Pella → 2 PM Thessaloniki.", listOf("monument")),
-                5 to DayNarrative("White Tower · Roman Arch · Byzantine museums · Ano Poli", "Full day in Thessaloniki. White Tower, Arch of Galerius, Museum of Byzantine Culture, Archaeological Museum, and Ano Poli upper town with Byzantine walls.", "💡 White Tower → Arch → museums → Ano Poli sunset.", listOf("monument", "view")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens.", "💡 Leave early for a relaxed drive.", listOf("drive")),
-                7 to DayNarrative("Benaki Museum · Afternoon flight", "Morning at the Benaki Museum — 6,000 years of Greek culture from neolithic to modern. Rooftop café with Acropolis view.", "💡 9 AM museum → airport by noon.", listOf("monument"))
             )
         ),
         TripTemplate(
@@ -448,16 +398,6 @@ object TripData {
                 4 to listOf("zag-01", "zag-02", "zag-04", "zag-05", "zag-10"),
                 5 to listOf("zag-06", "zag-08", "zag-09"),
                 6 to emptyList(), 7 to listOf("ath-12")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Head to Psyrri for dinner.", "💡 Hotel near Monastiraki.", listOf("food")),
-                1 to DayNarrative("Acropolis · Museum · Philopappos sunset · Plaka dinner", "Acropolis and museum in the morning, Philopappos Hill sunset walk, Areopagus Rock, and Plaka souvlaki.", "💡 8 AM Acropolis → Museum → Philopappos sunset → Plaka dinner.", listOf("monument", "hike", "view", "food")),
-                2 to DayNarrative("Monasteries in the sky · Sunset viewpoint · Kalambaka", "Drive to Meteora. Great Meteoron, Varlaam, Psaropetra sunset with all six monasteries visible. Dinner in Kalambaka.", "💡 Noon arrival → 2 monasteries → Psaropetra sunset → Kalambaka dinner.", listOf("monument", "view", "food")),
-                3 to DayNarrative("Byzantine fortress · Lake island · Perama Cave · Bazaar dinner", "Drive to Ioannina. Walk the Its Kale Fortress, boat to the lake island for Ali Pasha Museum, visit Perama Cave, dinner in the old bazaar.", "💡 Noon arrival → fortress → boat to island → cave → bazaar dinner.", listOf("monument", "nature", "food")),
-                4 to DayNarrative("Vikos Gorge viewpoints · Stone bridges · Mountain villages", "Full day in Zagori. Oxya glass viewpoint (900m drop), Beloi viewpoint hike, Plakidas Bridge, Monodendri village. Mountain taverna dinner.", "💡 9 AM Oxya → Beloi hike → lunch → bridge → village → dinner.", listOf("hike", "view", "monument", "food")),
-                5 to DayNarrative("Papingo pools · Vradeto Steps · Stone bridges", "Twin Papingo villages with turquoise rock pools, Vradeto Steps (1,100 stone stairs), Kipoi stone bridges walk.", "💡 9 AM Papingo → swim → Vradeto Steps → Kipoi bridges.", listOf("hike", "nature", "view")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens.", "💡 Leave early for a relaxed drive.", listOf("drive")),
-                7 to DayNarrative("Monastiraki Flea Market · Afternoon flight", "Morning at Monastiraki Flea Market — antiques, vintage finds, handmade souvenirs. Then airport.", "💡 Best on Sundays. Go early for the best finds.", listOf("market"))
             )
         ),
         TripTemplate(
@@ -471,16 +411,6 @@ object TripData {
                 4 to listOf("thes-05", "thes-16", "thes-11", "thes-12", "thes-13"),
                 5 to listOf("hal-01", "hal-02", "hal-05", "hal-06"),
                 6 to emptyList(), 7 to listOf("ath-07")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Psyrri for dinner.", "💡 Hotel near Monastiraki.", listOf("food")),
-                1 to DayNarrative("Acropolis · Plaka souvlaki · Central Market · Rooftop cocktails", "Morning Acropolis, then eat your way through Athens. Souvlaki in Plaka, Central Market chaos, rooftop cocktails at A for Athens with lit Acropolis view.", "💡 8 AM Acropolis → Plaka → Central Market → evening rooftop bar.", listOf("monument", "food", "view")),
-                2 to DayNarrative("Volos waterfront · Tsipouro crawl with free meze", "Drive to Volos. Waterfront promenade with Pelion views, then the unique tsipouradika tradition: order tsipouro, get free meze plates. Hop between 2-3 spots. Visit the archaeological museum.", "💡 Afternoon arrival → museum → 6 PM tsipouro crawl. The meze gets better as the evening goes.", listOf("food", "view")),
-                3 to DayNarrative("Pelion villages · Forest trail to beach · Mamma Mia harbor", "Drive into Pelion. Makrinitsa \"balcony\" village, hike the ancient kalderimi to Mylopotamos beach, visit Damouchari (Mamma Mia filming location), mountain taverna in Kissos.", "💡 9 AM Makrinitsa → kalderimi → beach swim → Damouchari → Kissos dinner.", listOf("hike", "beach", "view", "food")),
-                4 to DayNarrative("Thessaloniki food walk · Markets · Waterfront · Nightlife", "Drive to Thessaloniki. All about food. Aristotelous Square bougatsa, food walk through souvlaki strip, Modiano Market, Ladadika bars, waterfront sunset.", "💡 Bougatsa at Bantis, souvlaki at Derlicatessen, mussels at Ouzou Melathron.", listOf("food", "view")),
-                5 to DayNarrative("Halkidiki beaches · Cliff village · Fresh fish harbor", "Drive to Halkidiki. Sandy Kassandra beaches, cliff-top Afytos village, Sarti beach with Mount Athos view, Porto Koufo for dockside fresh fish.", "💡 Morning beaches → Afytos lunch → Sarti → Porto Koufo dinner.", listOf("beach", "food", "view")),
-                6 to DayNarrative("Highway south · Free time in transit", "Long drive back to Athens.", "💡 Leave early for a relaxed drive.", listOf("drive")),
-                7 to DayNarrative("National Garden stroll · Afternoon flight", "Morning stroll through the National Garden — shaded paths, ponds, turtles. A peaceful ending. Then airport.", "💡 9 AM garden → airport by noon.", listOf("nature"))
             )
         ),
         TripTemplate(
@@ -495,16 +425,6 @@ object TripData {
                 5 to listOf("oly-01", "oly-05", "oly-06"),
                 6 to listOf("pln-03", "pln-02", "pln-04"),
                 7 to listOf("ath-14")
-            ),
-            dayNarratives = mapOf(
-                0 to DayNarrative("Evening arrival · Dinner in Psyrri", "Land in Athens. Psyrri for dinner.", "💡 Hotel near Monastiraki.", listOf("food")),
-                1 to DayNarrative("Acropolis · Museum · Areopagus sunset · Plaka souvlaki", "Morning Acropolis and museum, then souvlaki in Plaka, sunset at Areopagus.", "💡 8 AM Acropolis → Museum → Plaka lunch → 8 PM Areopagus sunset.", listOf("monument", "view", "food")),
-                2 to DayNarrative("Oracle of Delphi · Tholos · Museum · Arachova village", "Drive to Delphi. Sacred Way, Tholos, museum, Arachova for dinner.", "💡 Noon arrival → site → Tholos → museum → Arachova.", listOf("monument", "view", "food")),
-                3 to DayNarrative("Monasteries in the sky · Panoramic sunset", "Drive to Meteora. Great Meteoron, Varlaam, Psaropetra sunset over all six monasteries.", "💡 Noon arrival → 2 monasteries → Psaropetra sunset.", listOf("monument", "view")),
-                4 to DayNarrative("Thessaloniki · White Tower · Markets · Waterfront", "Drive to Thessaloniki. White Tower, Aristotelous Square, Modiano Market, waterfront promenade.", "💡 Noon arrival → White Tower → Aristotelous bougatsa → market → waterfront sunset.", listOf("monument", "food", "view")),
-                5 to DayNarrative("Mount Olympus · Gorge waterfalls · Ancient Dion", "Drive to Olympus. Enipeas Gorge hike, Ancient Dion sacred city, Litochoro dinner.", "💡 Noon arrival → gorge hike → Ancient Dion → Litochoro dinner.", listOf("hike", "monument", "food")),
-                6 to DayNarrative("Pelion villages · Beach · Mamma Mia harbor", "Drive to Pelion. Makrinitsa village, Mylopotamos beach, Damouchari harbor.", "💡 9 AM Makrinitsa → beach → Damouchari. Drive to Athens evening.", listOf("view", "beach", "food")),
-                7 to DayNarrative("Panathenaic Stadium · Afternoon flight", "Morning at the Panathenaic Stadium. Then airport.", "💡 9 AM stadium → airport by noon.", listOf("monument"))
             )
         ),
         TripTemplate(
